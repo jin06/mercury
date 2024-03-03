@@ -1,8 +1,8 @@
 package mqtt
 
-type Version byte
+type ProtocolVersion byte
 
-func (v Version) String() string {
+func (v ProtocolVersion) String() string {
 	switch v {
 	case MQTT3:
 		return "mqtt3.1"
@@ -15,7 +15,7 @@ func (v Version) String() string {
 }
 
 const (
-	MQTT3 Version = 0
-	MQTT4 Version = 1
-	MQTT5 Version = 2
+	MQTT3 ProtocolVersion = 0
+	MQTT4 ProtocolVersion = 1
+	MQTT5 ProtocolVersion = 2
 )
