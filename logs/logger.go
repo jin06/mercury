@@ -1,11 +1,11 @@
-package logger
+package logs
 
 import (
 	// "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-var logger = log.Logger
+var Logger = log.Logger
 
 func init() {
 }

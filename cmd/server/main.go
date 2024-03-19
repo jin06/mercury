@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/jin06/mercury/internal/broker"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +15,8 @@ func init() {
 		Use: "MQTT broker!",
 		Run: func(c *cobra.Command, args []string) {
 			fmt.Println("Hi~~ mecury is a mqtt server.")
-
+			b := broker.NewBroker()
+			b.Run(context.Background())
 		},
 	}
 }
