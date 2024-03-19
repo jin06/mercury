@@ -1,7 +1,5 @@
 package mqtt
 
-import "crypto/x509"
-
 type Connect struct {
 	Version         ProtocolVersion
 	CleanSession    bool // v4
