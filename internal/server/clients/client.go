@@ -23,12 +23,14 @@ type Client struct {
 
 func (c *Client) Run(ctx context.Context) (err error) {
 	c.server.On(c)
+	reader := NewReader(c.Conn)
 	for {
 		b := make([]byte, 1000)
-		_, rerr := c.Conn.Read(b)
-		if rerr != nil {
-			logs.Logger.Err(rerr)
+		p, err := reader.ReadPacket()
+		if err != nil {
+			panic(err)
 		}
+		logs.Logger.Info().Msgf("%v", p)
 		logs.Logger.Info().Msgf("%b", b)
 	}
 	return
