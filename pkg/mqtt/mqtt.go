@@ -15,7 +15,7 @@ func (v ProtocolVersion) String() string {
 }
 
 const (
-	MQTT3 ProtocolVersion = 0
-	MQTT4 ProtocolVersion = 1
-	MQTT5 ProtocolVersion = 2
+	MQTT3 ProtocolVersion = 3
+	MQTT4 ProtocolVersion = 4
+	MQTT5 ProtocolVersion = 5
 )

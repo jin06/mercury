@@ -1,8 +1,11 @@
 package mqtt
 
+import "io"
+
 // Packet for mqtt packet
 type Packet interface {
-	Version() ProtocolVersion
+	String() string
+	Decode(reader io.Reader) error
 }
 
 // FixedHeader
@@ -19,10 +22,37 @@ type PacketID uint16
 
 type QoS byte
 
-type Packet2 struct {
-}
+const (
+	QoS0 QoS = iota
+	QoS1
+	QoS2
+)
 
-type FiexedHeader struct{}
+type PacketType byte
+
+const (
+	CONNECT PacketType = iota + 1
+	CONNACK
+	PUBLISH
+	PUBACK
+	PUBREC
+	PUBREL
+	PUBCOMP
+	SUBSCRIBE
+	SUBACK
+	UNSUBSCRIBE
+	UNSUBACK
+	PINGREQ
+	PINGRESP
+	DISCONNECT
+	AUTH
+)
+
+type FiexedHeader struct {
+	Raw [2]byte
+	// Type  byte
+	// Flags byte
+}
 
 type VariableHeader struct{}
 
