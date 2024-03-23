@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 
 	"github.com/jin06/mercury/pkg/mqtt"
@@ -52,7 +51,7 @@ func parsePacket(fiexedBytes []byte) (mqtt.Packet, error) {
 func (r *Reader) ReadPacket() (p mqtt.Packet, err error) {
 	fh := make([]byte, 2)
 
-	if _, err = io.ReadFull(r.readbuf, fh); err != nil {
+	if _, err = r.readbuf.Read(fh); err != nil {
 		return
 	}
 	if p, err = parsePacket(fh); err != nil {
