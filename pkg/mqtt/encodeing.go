@@ -3,6 +3,8 @@ package mqtt
 import (
 	"errors"
 	"io"
+
+	"github.com/jin06/mercury/pkg/utils"
 )
 
 func bytesToUint64(l []byte) (ret uint64, err error) {
@@ -14,15 +16,12 @@ func bytesToUint64(l []byte) (ret uint64, err error) {
 		ret = ret + uint64(l[i])
 	}
 	return
-}
 
-func strLength(l []byte) uint16 {
-	ret := uint16(l[1]) + (uint16(l[0]) << 8)
-	return ret
 }
 
 func decodeKeepAlive(l []byte) uint16 {
-	return strLength(l)
+	res, _ := utils.ToUint16(l)
+	return res
 }
 
 func decodeLength(reader io.Reader) (l uint16, err error) {
@@ -30,8 +29,7 @@ func decodeLength(reader io.Reader) (l uint16, err error) {
 	if _, err = reader.Read(b); err != nil {
 		return
 	}
-	l = strLength(b)
-	return
+	return utils.ToUint16(b)
 }
 
 func decodeProtocolName(reader io.Reader) (res []byte, err error) {

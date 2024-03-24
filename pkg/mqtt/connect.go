@@ -1,36 +1,53 @@
 package mqtt
 
 import (
-	"errors"
 	"fmt"
 	"io"
+
+	"github.com/jin06/mercury/pkg/utils"
 )
 
 type Connect struct {
-	Version                    ProtocolVersion
-	Clean                      bool // v4
-	KeepAlive                  uint16
-	ClientID                   []byte
-	Username                   string
-	Password                   string
-	WillQoS                    bool
-	WillFlag                   bool
-	WillRetain                 bool // v4
-	WillDelay                  uint32
-	WillProperties             map[string]string
-	WillTopic                  []byte
-	WillMessage                []byte
-	willDelayInterval          uint64 // only mqtt5
-	MessageExpiry              uint64
-	SessionExpiryInterval      uint64 // mqtt5
-	RequestResponseInformation byte
-	RequestProblemInformation  byte
-	PayloadFormat              bool
-	ContentType                string
-	ResponseTopic              string
-	CorrelationData            []byte
-	UserProperty               map[string]string
+	Version           ProtocolVersion
+	Clean             bool // v4
+	KeepAlive         uint16
+	ClientID          []byte
+	Username          string
+	Password          string
+	WillQoS           bool
+	WillFlag          bool
+	WillRetain        bool // v4
+	WillDelay         uint32
+	WillProperties    map[string]string
+	WillTopic         []byte
+	WillMessage       []byte
+	willDelayInterval uint64 // only mqtt5
+	MessageExpiry     uint64
+	// SessionExpiryInterval      uint64 // mqtt5
+	// RequestResponseInformation byte
+	// RequestProblemInformation  byte
+	PayloadFormat   bool
+	ContentType     string
+	ResponseTopic   string
+	CorrelationData []byte
+	UserProperty    map[string]string
+	Properties      Properties
 }
+
+// mqtt5
+type Properties struct {
+	RequestProblemInformation  byte
+	RequestResponseInformation byte
+	SessionExpiryInterval      uint32
+	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
+	ReceiveMaximum uint16
+	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
+	MaximumPacketSize uint32
+	TopicAliasMax     uint16
+	UserProperties    UserProperties
+}
+
+type UserProperties map[string]string
 
 func (c *Connect) String() string {
 	return ""
@@ -60,7 +77,13 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 	// reserved := buf[8] & 0b00000001
 	// measured in seconds
 	c.KeepAlive = decodeKeepAlive(buf[2:])
-	c.decodeProperties(reader)
+	if c.Version == MQTT5 {
+		properties, err := decodeProperties(reader)
+		if err != nil {
+			return err
+		}
+		c.Properties = properties
+	}
 	if c.ClientID, err = decodeUTF8(reader); err != nil {
 		return
 	}
@@ -147,69 +170,148 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 	return
 }
 
-func (c *Connect) decodeProperties(reader io.Reader) (err error) {
-	if c.Version == MQTT5 {
-		prolength := make([]byte, 1)
-		if _, err = reader.Read(prolength); err != nil {
-			return
-		}
-		properties := make([]byte, prolength[0])
-		if _, err = reader.Read(properties); err != nil {
-			return
-		}
-		for {
-			if len(properties) <= 0 {
-				break
+func decodeProperties(reader io.Reader) (result Properties, err error) {
+	result = Properties{}
+	var total int
+	if res, err := readByte(reader); err != nil {
+		return result, err
+	} else {
+		total = int(res)
+	}
+
+	for i := 0; i < total; {
+		var identifier byte
+		identifier, err = readByte(reader)
+		i++
+
+		switch identifier {
+		case 0x11:
+			{
+				i += 4
+				if result.SessionExpiryInterval, err = readUint32(reader); err != nil {
+					return
+				}
 			}
-			switch properties[0] {
-			case 0x11:
-				{
-					if len(properties) < 5 {
-						return errors.New("protocol error")
-					}
-					if c.SessionExpiryInterval, err = bytesToUint64(properties[1:5]); err != nil {
+		case 0x19:
+			{
+				i++
+				result.RequestResponseInformation, err = readByte(reader)
+				if err != nil {
+					return
+				}
+			}
+		case 0x17:
+			{
+				i++
+				result.RequestProblemInformation, err = readByte(reader)
+				if err != nil {
+					return
+				}
+			}
+			// receive max
+		case 0x21:
+			{
+				i += 2
+				if result.ReceiveMaximum, err = readUint16(reader); err != nil {
+					return
+				}
+			}
+			// Max packet size
+		case 0x27:
+			{
+				i += 4
+				if result.MaximumPacketSize, err = readUint32(reader); err != nil {
+					return
+				}
+			}
+			//  Topic Alias Max
+		case 0x22:
+			{
+				i += 2
+				if result.TopicAliasMax, err = readUint16(reader); err != nil {
+					return
+				}
+			}
+			// User properties
+		case 0x26:
+			{
+				userProperties := UserProperties{}
+				list := []string{}
+				for j := 0; j < total-i; {
+					var val string
+					var n int
+					if val, n, err = readStr(reader); err != nil {
 						return
 					}
-					properties = properties[5:]
+					j = j + n
+					list = append(list, val)
 				}
-			case 0x19:
-				{
-					if len(properties) < 2 {
-						return errors.New("protocol error")
-					}
-
-					c.RequestResponseInformation = properties[1]
-					properties = properties[2:]
+				if len(list)%2 == 1 {
+					err = ProtocolError
+					return
 				}
-			case 0x17:
-				{
-					if len(properties) < 2 {
-						return errors.New("protocol error")
-					}
-					c.RequestProblemInformation = properties[1]
-					properties = properties[2:]
+				for i := 0; i < len(list); i += 2 {
+					userProperties[list[i]] = userProperties[list[i+1]]
 				}
-				// receive max
-			case 0x21:
-				{
-
-				}
-				// Max packet size
-			case 0x27:
-				{
-
-				}
-				//  Topic Alias Max
-			case 0x22:
-				{
-				}
-				// User properties
-			case 0x26:
-				{
-					break
-				}
+				break
 			}
 		}
 	}
 	return
+}
+
+func decodeUserProperties(s []byte) (err error) {
+	return
+}
+
+func readUint64(reader io.Reader) (uint64, error) {
+	res, err := read(reader, 8)
+	if err != nil {
+		return 0, err
+	}
+	return utils.ToUint64(res)
+}
+
+func readUint32(reader io.Reader) (uint32, error) {
+	res, err := read(reader, 4)
+	if err != nil {
+		return 0, err
+	}
+	return utils.ToUint32(res)
+}
+
+func readUint16(reader io.Reader) (uint16, error) {
+	res, err := read(reader, 2)
+	if err != nil {
+		return 0, err
+	}
+	return utils.ToUint16(res)
+}
+
+func readByte(reader io.Reader) (byte, error) {
+	res, err := read(reader, 1)
+	if err != nil {
+		return 0, err
+	}
+	return res[0], nil
+}
+
+func readStr(reader io.Reader) (str string, n int, err error) {
+	var l uint16
+	if l, err = readUint16(reader); err != nil {
+		return
+	}
+	var res []byte
+	if res, err = read(reader, int(l)); err != nil {
+		return
+	}
+	str = string(res)
+	n = int(l + 2)
+	return
+}
+
+func read(reader io.Reader, n int) ([]byte, error) {
+	res := make([]byte, n)
+	_, err := io.ReadFull(reader, res)
+	return res, err
 }
