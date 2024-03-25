@@ -3,8 +3,6 @@ package mqtt
 import (
 	"fmt"
 	"io"
-
-	"github.com/jin06/mercury/pkg/utils"
 )
 
 type Connect struct {
@@ -78,11 +76,11 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 	// measured in seconds
 	c.KeepAlive = decodeKeepAlive(buf[2:])
 	if c.Version == MQTT5 {
-		properties, err := decodeProperties(reader)
-		if err != nil {
+		if properties, err := decodeProperties(reader); err != nil {
 			return err
+		} else {
+			c.Properties = properties
 		}
-		c.Properties = properties
 	}
 	if c.ClientID, err = decodeUTF8(reader); err != nil {
 		return
@@ -171,7 +169,9 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 }
 
 func decodeProperties(reader io.Reader) (result Properties, err error) {
-	result = Properties{}
+	result = Properties{
+		UserProperties: make(UserProperties),
+	}
 	var total int
 	if res, err := readByte(reader); err != nil {
 		return result, err
@@ -235,7 +235,6 @@ func decodeProperties(reader io.Reader) (result Properties, err error) {
 			// User properties
 		case 0x26:
 			{
-				userProperties := UserProperties{}
 				list := []string{}
 				for j := 0; j < total-i; {
 					var val string
@@ -247,71 +246,14 @@ func decodeProperties(reader io.Reader) (result Properties, err error) {
 					list = append(list, val)
 				}
 				if len(list)%2 == 1 {
-					err = ProtocolError
-					return
+					return result, ProtocolError
 				}
 				for i := 0; i < len(list); i += 2 {
-					userProperties[list[i]] = userProperties[list[i+1]]
+					result.UserProperties[list[i]] = result.UserProperties[list[i+1]]
 				}
 				break
 			}
 		}
 	}
 	return
-}
-
-func decodeUserProperties(s []byte) (err error) {
-	return
-}
-
-func readUint64(reader io.Reader) (uint64, error) {
-	res, err := read(reader, 8)
-	if err != nil {
-		return 0, err
-	}
-	return utils.ToUint64(res)
-}
-
-func readUint32(reader io.Reader) (uint32, error) {
-	res, err := read(reader, 4)
-	if err != nil {
-		return 0, err
-	}
-	return utils.ToUint32(res)
-}
-
-func readUint16(reader io.Reader) (uint16, error) {
-	res, err := read(reader, 2)
-	if err != nil {
-		return 0, err
-	}
-	return utils.ToUint16(res)
-}
-
-func readByte(reader io.Reader) (byte, error) {
-	res, err := read(reader, 1)
-	if err != nil {
-		return 0, err
-	}
-	return res[0], nil
-}
-
-func readStr(reader io.Reader) (str string, n int, err error) {
-	var l uint16
-	if l, err = readUint16(reader); err != nil {
-		return
-	}
-	var res []byte
-	if res, err = read(reader, int(l)); err != nil {
-		return
-	}
-	str = string(res)
-	n = int(l + 2)
-	return
-}
-
-func read(reader io.Reader, n int) ([]byte, error) {
-	res := make([]byte, n)
-	_, err := io.ReadFull(reader, res)
-	return res, err
 }
