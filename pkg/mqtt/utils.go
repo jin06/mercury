@@ -30,6 +30,20 @@ func readUint16(reader io.Reader) (uint16, error) {
 	return utils.ToUint16(res)
 }
 
+func readBool(reader io.Reader) (bool, error) {
+	b, err := readByte(reader)
+	if err != nil {
+		return false, err
+	}
+	if b == 0 {
+		return false, nil
+	}
+	if b == 1 {
+		return true, nil
+	}
+	return false, ProtocolError
+}
+
 func readByte(reader io.Reader) (byte, error) {
 	res, err := read(reader, 1)
 	if err != nil {
@@ -38,7 +52,12 @@ func readByte(reader io.Reader) (byte, error) {
 	return res[0], nil
 }
 
-func readStr(reader io.Reader) (str string, n int, err error) {
+func readStr(reader io.Reader) (str string, err error) {
+	str, _, err = readStrN(reader)
+	return
+}
+
+func readStrN(reader io.Reader) (str string, n int, err error) {
 	var l uint16
 	if l, err = readUint16(reader); err != nil {
 		return

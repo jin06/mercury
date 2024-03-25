@@ -6,37 +6,22 @@ import (
 )
 
 type Connect struct {
-	Version           ProtocolVersion
-	Clean             bool // v4
-	KeepAlive         uint16
-	ClientID          []byte
-	Username          string
-	Password          string
-	WillQoS           bool
-	WillFlag          bool
-	WillRetain        bool // v4
-	WillDelay         uint32
-	WillProperties    map[string]string
-	WillTopic         []byte
-	WillMessage       []byte
-	willDelayInterval uint64 // only mqtt5
-	MessageExpiry     uint64
-	// SessionExpiryInterval      uint64 // mqtt5
-	// RequestResponseInformation byte
-	// RequestProblemInformation  byte
-	PayloadFormat   bool
-	ContentType     string
-	ResponseTopic   string
-	CorrelationData []byte
-	UserProperty    map[string]string
-	Properties      Properties
+	Version    ProtocolVersion
+	Clean      bool // v4
+	KeepAlive  uint16
+	ClientID   string
+	Username   string
+	Password   string
+	Properties *Properties
+	Will       *Will
 }
 
 // mqtt5
 type Properties struct {
 	RequestProblemInformation  byte
 	RequestResponseInformation byte
-	SessionExpiryInterval      uint32
+	// SessionExpiryInterval second
+	SessionExpiryInterval uint32
 	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
 	ReceiveMaximum uint16
 	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
@@ -54,11 +39,11 @@ func (c *Connect) String() string {
 func (c *Connect) Decode(reader io.Reader) (err error) {
 	// buf := make([]byte, 16)
 
-	protocolName, err := decodeProtocolName(reader)
-	if err != nil {
-		return
+	if protocolName, err := decodeProtocolName(reader); err != nil {
+		return err
+	} else {
+		fmt.Println(protocolName)
 	}
-	fmt.Println(protocolName)
 	buf := make([]byte, 4)
 	if _, err = reader.Read(buf); err != nil {
 		return
@@ -68,108 +53,54 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 	// var usernameFlag, passFlag, willRetain, willQoS, willFlag, cleanStart, reserved bool
 	usernameFlag := buf[1]&0b10000000 == 0b10000000
 	passFlag := buf[1]&0b01000000 == 0b01000000
-	// willRetain := buf[8] & 0b00100000
-	// willQoS := QoS(buf[8] & 0b00011000)
-	willFlag := buf[1]&0b00000100 == 0b00000100
+	if buf[1]&0b00000100 == 0b00000100 {
+		c.Will = &Will{}
+		c.Will.Retain = (buf[1]&0b00100000 == 0b00100000)
+		c.Will.QoS = QoS(buf[1] & 0b00011000)
+	}
 	c.Clean = buf[1]&0b00000010 == 0b00000010
 	// reserved := buf[8] & 0b00000001
 	// measured in seconds
 	c.KeepAlive = decodeKeepAlive(buf[2:])
 	if c.Version == MQTT5 {
-		if properties, err := decodeProperties(reader); err != nil {
+		properties, err := decodeProperties(reader)
+		if err != nil {
 			return err
-		} else {
-			c.Properties = properties
 		}
+		c.Properties = properties
 	}
-	if c.ClientID, err = decodeUTF8(reader); err != nil {
+	if c.ClientID, err = readStr(reader); err != nil {
 		return
 	}
-	switch c.Version {
-	case MQTT3, MQTT4:
-		{
-			if willFlag {
-				if c.WillTopic, err = decodeUTF8(reader); err != nil {
-					return
-				}
-				if c.WillMessage, err = decodeUTF8(reader); err != nil {
-					return
-				}
-			}
-			if usernameFlag {
-				if c.Username, err = decodeUTF8Str(reader); err != nil {
-					return
-				}
-			}
-			if passFlag {
-				if c.Password, err = decodeUTF8Str(reader); err != nil {
-					return
-				}
-
+	if c.Will != nil {
+		if c.Version == MQTT5 {
+			if c.Will.Properties, err = decodeWillProperties(reader); err != nil {
+				return
 			}
 		}
-	case MQTT5:
-		{
-			// read property length
-			proLen := make([]byte, 1)
-			if _, err = reader.Read(proLen); err != nil {
-				return
-			}
-			willProperties := make([]byte, int(proLen[0]))
-			if _, err = reader.Read(willProperties); err != nil {
-				return
-			}
-			for {
-				if len(willProperties) <= 0 {
-					break
-				}
-				idetifier := willProperties[0]
-				switch idetifier {
-				case 0x18:
-					{
-						if c.willDelayInterval, err = bytesToUint64(willProperties[1:5]); err != nil {
-							return
-						}
-					}
-					// payload format
-				case 0x01:
-					{
-
-					}
-					// publication expiry interval
-				case 0x02:
-					{
-
-					}
-					// content type
-				case 0x03:
-					{
-
-					}
-					// reponse topic
-				case 0x08:
-					{
-
-					}
-					// correlation data
-				case 0x09:
-					{
-
-					}
-				}
-
-			}
-
-			if c.willDelayInterval, err = bytesToUint64(willProperties[0:4]); err != nil {
-				return
-			}
+		if c.Will.Topic, err = readStr(reader); err != nil {
+			return
+		}
+		if c.Will.Message, err = readStr(reader); err != nil {
+			return
 		}
 	}
+	if usernameFlag {
+		if c.Username, err = readStr(reader); err != nil {
+			return
+		}
+	}
+	if passFlag {
+		if c.Password, err = readStr(reader); err != nil {
+			return
+		}
+	}
+
 	return
 }
 
-func decodeProperties(reader io.Reader) (result Properties, err error) {
-	result = Properties{
+func decodeProperties(reader io.Reader) (result *Properties, err error) {
+	result = &Properties{
 		UserProperties: make(UserProperties),
 	}
 	var total int
@@ -181,7 +112,9 @@ func decodeProperties(reader io.Reader) (result Properties, err error) {
 
 	for i := 0; i < total; {
 		var identifier byte
-		identifier, err = readByte(reader)
+		if identifier, err = readByte(reader); err != nil {
+			return
+		}
 		i++
 
 		switch identifier {
@@ -239,7 +172,7 @@ func decodeProperties(reader io.Reader) (result Properties, err error) {
 				for j := 0; j < total-i; {
 					var val string
 					var n int
-					if val, n, err = readStr(reader); err != nil {
+					if val, n, err = readStrN(reader); err != nil {
 						return
 					}
 					j = j + n
