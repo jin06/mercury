@@ -87,6 +87,5 @@ func decodeWillProperties(reader io.Reader) (result *WillProperties, err error) 
 			}
 		}
 	}
-
 	return
 }

@@ -45,7 +45,7 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 		fmt.Println(protocolName)
 	}
 	buf := make([]byte, 4)
-	if _, err = reader.Read(buf); err != nil {
+	if _, err = io.ReadFull(reader, buf); err != nil {
 		return
 	}
 
