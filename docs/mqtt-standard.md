@@ -2,7 +2,7 @@
 
 ## MQTT defination
 
-- (MQTT5)[https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html]
+- [MQTT5](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html)
 
 - (MQTT4)[https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html]
 
