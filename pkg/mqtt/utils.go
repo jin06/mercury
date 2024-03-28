@@ -59,15 +59,18 @@ func readStr(reader io.Reader) (str string, err error) {
 
 func readStrN(reader io.Reader) (str string, n int, err error) {
 	var l uint16
+	n = 2
 	if l, err = readUint16(reader); err != nil {
 		return
 	}
-	var res []byte
-	if res, err = read(reader, int(l)); err != nil {
-		return
+	if l != 0 {
+		var res []byte
+		if res, err = read(reader, int(l)); err != nil {
+			return
+		}
+		str = string(res)
+		n = n + int(l)
 	}
-	str = string(res)
-	n = int(l + 2)
 	return
 }
 
@@ -75,4 +78,27 @@ func read(reader io.Reader, n int) ([]byte, error) {
 	res := make([]byte, n)
 	_, err := io.ReadFull(reader, res)
 	return res, err
+}
+
+func uint32ToBytes(source uint32) []byte {
+	return []byte{
+		byte(source >> 24),
+		byte(source >> 16),
+		byte(source >> 8),
+		byte(source),
+	}
+}
+
+func uint16ToBytes(source uint16) []byte {
+	return []byte{
+		byte(source >> 8),
+		byte(source),
+	}
+}
+
+func boolTobyte(source bool) byte {
+	if source {
+		return 1
+	}
+	return 0
 }

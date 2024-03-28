@@ -168,6 +168,7 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 			// User properties
 		case 0x26:
 			{
+				var ul int
 				list := []string{}
 				for j := 0; j < total-i; {
 					var val string
@@ -175,6 +176,7 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 					if val, n, err = readStrN(reader); err != nil {
 						return
 					}
+					ul += n
 					j = j + n
 					list = append(list, val)
 				}
@@ -184,7 +186,8 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 				for i := 0; i < len(list); i += 2 {
 					result.UserProperties[list[i]] = result.UserProperties[list[i+1]]
 				}
-				break
+				i += ul
+				return
 			}
 		}
 	}

@@ -83,7 +83,7 @@ func decodeWillProperties(reader io.Reader) (result *WillProperties, err error) 
 				if result.CorrelationData, n, err = readStrN(reader); err != nil {
 					return
 				}
-				i = +n
+				i += n
 			}
 		}
 	}

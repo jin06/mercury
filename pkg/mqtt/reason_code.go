@@ -10,3 +10,7 @@ var (
 	V3_CONNACK_BAD_USERNAME_PASSWORD ReasonCode = 0x04
 	V3_CONNACK_NOT_AUTHORIZED        ReasonCode = 0x05
 )
+
+var (
+	V5_CONACK_SUCCESS ReasonCode = 0x00
+)
