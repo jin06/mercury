@@ -127,12 +127,8 @@ func decodeConnackProperties(reader io.Reader) (result *ConnackProperties, err e
 }
 
 func (c *Connack) Encode(version ProtocolVersion) (result []byte, err error) {
-	result = []byte{
-		byte(CONNACK) << 4,
-		2,
-		0,
-		byte(c.ReasonCode),
-	}
+	result = toHeader(CONNACK)
+	result = append(result, 0, byte(c.ReasonCode))
 	if c.SessionPresent {
 		result[2] |= 0x00000001
 	}

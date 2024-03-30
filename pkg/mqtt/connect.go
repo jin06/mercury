@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
@@ -16,21 +17,35 @@ type Connect struct {
 	Will       *Will
 }
 
-// mqtt5
-type Properties struct {
-	RequestProblemInformation  byte
-	RequestResponseInformation byte
-	// SessionExpiryInterval second
-	SessionExpiryInterval uint32
-	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
-	ReceiveMaximum uint16
-	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
-	MaximumPacketSize uint32
-	TopicAliasMax     uint16
-	UserProperties    UserProperties
+func (c *Connect) protocolName() string {
+	switch c.Version {
+	case MQTT3:
+		return "MQIsdp"
+	case MQTT4:
+		return "MQTT"
+	case MQTT5:
+		return "MQTT"
+	}
+	return ""
 }
 
-type UserProperties map[string]string
+func (c *Connect) encodeFlag() byte {
+	var flags byte
+	if c.Username != "" {
+		flags = flags | 0b1
+	}
+	if c.Password != "" {
+		flags = flags | 0b01
+	}
+	if c.Will != nil {
+		flags = flags | (byte(c.Will.QoS) << 3)
+		flags = flags | 0b00000010
+	}
+	if c.Clean {
+		flags = flags | 0b00000001
+	}
+	return flags
+}
 
 func (c *Connect) String() string {
 	return ""
@@ -192,4 +207,60 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 		}
 	}
 	return
+}
+
+func (c *Connect) Encode() (result []byte, err error) {
+	//Fixed header
+	result = toHeader(CONNECT)
+	//Variable header
+	var buf []byte
+	if buf, err = encodeString(c.protocolName()); err != nil {
+		return
+	}
+	result = append(result, buf...)
+	result = append(result, byte(c.Version))
+	result = append(result, c.encodeFlag())
+	result = append(result, encodeUint16(c.KeepAlive)...)
+	if c.ClientID == "" {
+		return nil, errors.New("Client Identifier nil")
+	}
+	if buf, err = encodeString(c.ClientID); err != nil {
+		return
+	}
+	result = append(result, buf...)
+	if c.Will != nil {
+		if buf, err = encodeString(c.Will.Topic); err != nil {
+			return
+		}
+		result = append(result, buf...)
+		if buf, err = encodeString(c.Will.Message); err != nil {
+			return
+		}
+		result = append(result, buf...)
+	}
+	if buf, err = encodeString(c.Username); err != nil {
+		return
+	}
+	result = append(result, buf...)
+	if buf, err = encodeString(c.Password); err != nil {
+		return
+	}
+	result = append(result, buf...)
+	return
+}
+
+type UserProperties map[string]string
+
+// mqtt5
+type Properties struct {
+	RequestProblemInformation  byte
+	RequestResponseInformation byte
+	// SessionExpiryInterval second
+	SessionExpiryInterval uint32
+	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
+	ReceiveMaximum uint16
+	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
+	MaximumPacketSize uint32
+	TopicAliasMax     uint16
+	UserProperties    UserProperties
 }

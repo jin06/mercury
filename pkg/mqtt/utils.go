@@ -1,9 +1,14 @@
 package mqtt
 
 import (
+	"errors"
 	"io"
 
 	"github.com/jin06/mercury/pkg/utils"
+)
+
+const (
+	maxString int = 65535
 )
 
 func readUint64(reader io.Reader) (uint64, error) {
@@ -101,4 +106,22 @@ func boolTobyte(source bool) byte {
 		return 1
 	}
 	return 0
+}
+
+func encodeString(s string) ([]byte, error) {
+	if len(s) > maxString {
+		return nil, errors.New("")
+	}
+	l := uint16(len(s))
+	result := make([]byte, 0, l+2)
+	result = append(result, byte(l>>8), byte(l))
+	result = append(result, []byte(s)...)
+	return result, nil
+}
+
+func encodeUint16(i uint16) []byte {
+	return []byte{
+		byte(i >> 8),
+		byte(i),
+	}
 }

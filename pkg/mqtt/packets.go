@@ -30,6 +30,13 @@ const (
 
 type PacketType byte
 
+func toHeader(p PacketType) (result []byte) {
+	return []byte{
+		byte(p) << 4,
+		0,
+	}
+}
+
 const (
 	CONNECT PacketType = iota + 1
 	CONNACK
