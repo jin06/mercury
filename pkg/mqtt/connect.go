@@ -1,7 +1,6 @@
 package mqtt
 
 import (
-	"errors"
 	"fmt"
 	"io"
 )
@@ -196,7 +195,7 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 					list = append(list, val)
 				}
 				if len(list)%2 == 1 {
-					return result, ProtocolError
+					return result, ErrProtocol
 				}
 				for i := 0; i < len(list); i += 2 {
 					result.UserProperties[list[i]] = result.UserProperties[list[i+1]]
@@ -222,7 +221,7 @@ func (c *Connect) Encode() (result []byte, err error) {
 	result = append(result, c.encodeFlag())
 	result = append(result, encodeUint16(c.KeepAlive)...)
 	if c.ClientID == "" {
-		return nil, errors.New("Client Identifier nil")
+		return nil, ErrNullClientID
 	}
 	if buf, err = encodeString(c.ClientID); err != nil {
 		return

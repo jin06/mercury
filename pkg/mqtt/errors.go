@@ -3,6 +3,7 @@ package mqtt
 import "errors"
 
 var (
-	ProtocolError    = errors.New("protocol error")
-	UnsupportVersion = errors.New("unsupported version")
+	ErrProtocol         = errors.New("protocol error")
+	ErrUnsupportVersion = errors.New("unsupported version")
+	ErrNullClientID     = errors.New("null client id")
 )

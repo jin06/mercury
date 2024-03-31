@@ -17,7 +17,7 @@ func (c *Connack) Decode(reader io.Reader) (err error) {
 	}
 	length := int(msgLen)
 	if length < 2 {
-		return ProtocolError
+		return ErrProtocol
 	}
 	if flags, err := readByte(reader); err != nil {
 		if (flags & 0x00000001) == 0x00000001 {

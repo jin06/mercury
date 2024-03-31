@@ -46,7 +46,7 @@ func readBool(reader io.Reader) (bool, error) {
 	if b == 1 {
 		return true, nil
 	}
-	return false, ProtocolError
+	return false, ErrProtocol
 }
 
 func readByte(reader io.Reader) (byte, error) {
