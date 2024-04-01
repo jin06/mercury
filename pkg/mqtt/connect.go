@@ -1,13 +1,13 @@
 package mqtt
 
 import (
-	"fmt"
 	"io"
 )
 
 type Connect struct {
-	Version    ProtocolVersion
-	Clean      bool // v4
+	Version ProtocolVersion
+	//Clean Clean Session(v3,v4) or Clean Start(v5)
+	Clean      bool
 	KeepAlive  uint16
 	ClientID   string
 	Username   string
@@ -53,10 +53,8 @@ func (c *Connect) String() string {
 func (c *Connect) Decode(reader io.Reader) (err error) {
 	// buf := make([]byte, 16)
 
-	if protocolName, err := decodeProtocolName(reader); err != nil {
+	if _, err := decodeProtocolName(reader); err != nil {
 		return err
-	} else {
-		fmt.Println(protocolName)
 	}
 	buf := make([]byte, 4)
 	if _, err = io.ReadFull(reader, buf); err != nil {
@@ -115,7 +113,8 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 
 func decodeProperties(reader io.Reader) (result *Properties, err error) {
 	result = &Properties{
-		UserProperties: make(UserProperties),
+		UserProperties:    make(UserProperties),
+		MaximumPacketSize: -1,
 	}
 	var total int
 	if res, err := readByte(reader); err != nil {
@@ -167,9 +166,14 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x27:
 			{
 				i += 4
-				if result.MaximumPacketSize, err = readUint32(reader); err != nil {
+				var max uint32
+				if max, err = readUint32(reader); err != nil {
+					return
+				} else if max == 0 {
+					err = ErrMaximumPacketSize
 					return
 				}
+				result.MaximumPacketSize = int64(max)
 			}
 			//  Topic Alias Max
 		case 0x22:
@@ -208,43 +212,110 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 	return
 }
 
+func encodeProperties(props *Properties) (result []byte, err error) {
+	if props == nil {
+		return
+	}
+	result = []byte{0}
+
+	if props.SessionExpiryInterval != 0 {
+		result[0] += 5
+		result = append(result, 0x11)
+		result = append(result, uint32ToBytes(props.SessionExpiryInterval)...)
+	}
+
+	if props.RequestResponseInformation != 0 {
+		result[0] += 2
+		result = append(result, 0x19)
+		result = append(result, props.RequestResponseInformation)
+	}
+	if props.RequestProblemInformation != 1 {
+		result[0] += 2
+		result = append(result, 0x17)
+		result = append(result, props.RequestProblemInformation)
+	}
+	if props.ReceiveMaximum != 65535 {
+		result[0] += 3
+		result = append(result, 0x21)
+		result = append(result, uint16ToBytes(props.ReceiveMaximum)...)
+	}
+	if props.MaximumPacketSize != -1 {
+		result[0] += 5
+		result = append(result, 0x27)
+		result = append(result, uint32ToBytes(uint32(props.MaximumPacketSize))...)
+	}
+	if props.TopicAliasMax != 0 {
+		result[0] += 3
+		result = append(result, 0x22)
+		result = append(result, uint16ToBytes(props.TopicAliasMax)...)
+	}
+	if props.UserProperties != nil {
+		var buf []byte
+		for key, val := range props.UserProperties {
+			if buf, err = strToBytes(key); err != nil {
+				return
+			} else {
+				result = append(result, buf...)
+				result[0] += byte(len(buf))
+			}
+			if buf, err = strToBytes(val); err != nil {
+				return
+			} else {
+				result = append(result, buf...)
+				result[0] += byte(len(buf))
+			}
+		}
+	}
+	return
+}
+
 func (c *Connect) Encode() (result []byte, err error) {
 	//Fixed header
 	result = toHeader(CONNECT)
 	//Variable header
 	var buf []byte
-	if buf, err = encodeString(c.protocolName()); err != nil {
+	if buf, err = strToBytes(c.protocolName()); err != nil {
 		return
 	}
 	result = append(result, buf...)
 	result = append(result, byte(c.Version))
 	result = append(result, c.encodeFlag())
-	result = append(result, encodeUint16(c.KeepAlive)...)
+	result = append(result, uint16ToBytes(c.KeepAlive)...)
+	if buf, err = encodeProperties(c.Properties); err != nil {
+		result = append(result, buf...)
+	}
 	if c.ClientID == "" {
 		return nil, ErrNullClientID
 	}
-	if buf, err = encodeString(c.ClientID); err != nil {
+	if buf, err = strToBytes(c.ClientID); err != nil {
 		return
 	}
 	result = append(result, buf...)
 	if c.Will != nil {
-		if buf, err = encodeString(c.Will.Topic); err != nil {
+		if c.Version == MQTT5 {
+			if buf, err = encodeWillProperties(c.Will.Properties); err != nil {
+				return
+			}
+			result = append(result, buf...)
+		}
+		if buf, err = strToBytes(c.Will.Topic); err != nil {
 			return
 		}
 		result = append(result, buf...)
-		if buf, err = encodeString(c.Will.Message); err != nil {
+		if buf, err = strToBytes(c.Will.Message); err != nil {
 			return
 		}
 		result = append(result, buf...)
 	}
-	if buf, err = encodeString(c.Username); err != nil {
+	if buf, err = strToBytes(c.Username); err != nil {
 		return
 	}
 	result = append(result, buf...)
-	if buf, err = encodeString(c.Password); err != nil {
+	if buf, err = strToBytes(c.Password); err != nil {
 		return
 	}
 	result = append(result, buf...)
+
 	return
 }
 
@@ -259,7 +330,7 @@ type Properties struct {
 	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
 	ReceiveMaximum uint16
 	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
-	MaximumPacketSize uint32
+	MaximumPacketSize int64
 	TopicAliasMax     uint16
 	UserProperties    UserProperties
 }

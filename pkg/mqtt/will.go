@@ -89,3 +89,10 @@ func decodeWillProperties(reader io.Reader) (result *WillProperties, err error) 
 	}
 	return
 }
+
+func encodeWillProperties(will *WillProperties) (result []byte, err error) {
+	if will == nil {
+		return
+	}
+	return
+}

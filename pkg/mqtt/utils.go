@@ -108,7 +108,7 @@ func boolTobyte(source bool) byte {
 	return 0
 }
 
-func encodeString(s string) ([]byte, error) {
+func strToBytes(s string) ([]byte, error) {
 	if len(s) > maxString {
 		return nil, errors.New("")
 	}
@@ -117,11 +117,4 @@ func encodeString(s string) ([]byte, error) {
 	result = append(result, byte(l>>8), byte(l))
 	result = append(result, []byte(s)...)
 	return result, nil
-}
-
-func encodeUint16(i uint16) []byte {
-	return []byte{
-		byte(i >> 8),
-		byte(i),
-	}
 }
