@@ -1,5 +1,8 @@
 package mqtt
 
 type Puback struct {
-	MessageID uint16
+	PacketID       uint16
+	ReasonCode     ReasonCode
+	ReasonString   string
+	UserProperties UserProperties
 }
