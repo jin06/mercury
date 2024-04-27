@@ -19,3 +19,10 @@ const (
 	MQTT4 ProtocolVersion = 4
 	MQTT5 ProtocolVersion = 5
 )
+
+const (
+	MinMessageID uint16 = 0
+	MaxMessageID uint16 = 65535
+)
+
+type TopicWildcard string
