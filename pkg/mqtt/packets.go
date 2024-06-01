@@ -4,7 +4,8 @@ import "io"
 
 // Packet for mqtt packet
 type Packet interface {
-	String() string
+	// String() string
+	Encode() ([]byte, error)
 	Decode(reader io.Reader) error
 }
 
@@ -18,41 +19,12 @@ type Packet interface {
 // 	Remaining  byte
 // }
 
-type PacketID uint16
-
 type QoS byte
 
 const (
 	QoS0 QoS = iota
 	QoS1
 	QoS2
-)
-
-type PacketType byte
-
-func toHeader(p PacketType) (result []byte) {
-	return []byte{
-		byte(p) << 4,
-		0,
-	}
-}
-
-const (
-	CONNECT PacketType = iota + 1
-	CONNACK
-	PUBLISH
-	PUBACK
-	PUBREC
-	PUBREL
-	PUBCOMP
-	SUBSCRIBE
-	SUBACK
-	UNSUBSCRIBE
-	UNSUBACK
-	PINGREQ
-	PINGRESP
-	DISCONNECT
-	AUTH
 )
 
 type FiexedHeader struct {

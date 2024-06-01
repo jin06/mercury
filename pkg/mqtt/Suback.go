@@ -1,6 +1,6 @@
 package mqtt
 
 type Suback struct {
-	MessageID  uint16
+	PacketID   uint16
 	GrantedQoS QoS
 }
