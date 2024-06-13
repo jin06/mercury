@@ -321,6 +321,23 @@ func (c *Connect) Encode() (result []byte, err error) {
 
 type UserProperties map[string]string
 
+func (u *UserProperties) toBytes() (result []byte, err error) {
+	result = []byte{}
+	for key, val := range *u {
+		if bytes, err := strToBytes(key); err != nil {
+			return result, err
+		} else {
+			result = append(result, bytes...)
+		}
+		if bytes, err := strToBytes(val); err != nil {
+			return result, err
+		} else {
+			result = append(result, bytes...)
+		}
+	}
+	return
+}
+
 // mqtt5
 type Properties struct {
 	RequestProblemInformation  byte

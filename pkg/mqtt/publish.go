@@ -5,7 +5,7 @@ type Publish struct {
 	Qos                    QoS
 	Retain                 bool
 	Topic                  string
-	PacketID               uint16
+	PacketID               PacketID
 	Payload                []byte
 	PayloadFormatIndicator bool   // from mqtt5
 	MessageExpiryInterval  uint16 // from mqtt5 (seconds)
