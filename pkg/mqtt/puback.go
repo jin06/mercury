@@ -42,5 +42,22 @@ func (p *Puback) Encode() ([]byte, error) {
 
 // todo
 func (p *Puback) Decode(reader io.Reader) error {
+	if packetID, err := readUint16(reader); err != nil {
+		return err
+	} else {
+		p.PacketID = PacketID(packetID)
+	}
+	if p.Version == MQTT5 {
+		if reasonCode, err := readByte(reader); err != nil {
+			return err
+		} else {
+			p.ReasonCode = ReasonCode(reasonCode)
+		}
+		var userProperties UserProperties
+		if err := userProperties.fromReader(reader); err != nil {
+			return err
+		}
+		p.UserProperties = userProperties
+	}
 	return nil
 }

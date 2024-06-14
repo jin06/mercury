@@ -49,6 +49,26 @@ func readBool(reader io.Reader) (bool, error) {
 	return false, ErrProtocol
 }
 
+func readUint8(reader io.Reader) (uint8, error) {
+	res, err := readByte(reader)
+	if err != nil {
+		return 0, err
+	}
+	return uint8(res), nil
+}
+
+func readBytes(reader io.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	returnNum, err := io.ReadFull(reader, buf)
+	if err != nil {
+		return nil, err
+	}
+	if returnNum != n {
+		return nil, errors.New("no sufficient bytes")
+	}
+	return buf, nil
+}
+
 func readByte(reader io.Reader) (byte, error) {
 	res, err := read(reader, 1)
 	if err != nil {

@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"errors"
 	"io"
 )
 
@@ -336,6 +337,30 @@ func (u *UserProperties) toBytes() (result []byte, err error) {
 		}
 	}
 	return
+}
+
+func (u *UserProperties) fromReader(reader io.Reader) error {
+	propertyLength, err := readUint8(reader)
+	if err != nil {
+		return err
+	}
+	// buf, err := readBytes(reader, int(propertyLength))
+	arr := []string{}
+	for i := 0; i <= int(propertyLength); {
+		str, n, err := readStrN(reader)
+		if err != nil {
+			return err
+		}
+		arr = append(arr, str)
+		i += n
+	}
+	if len(arr)%2 == 1 {
+		return errors.New("count of string can't fulfil requirements of key-value pair")
+	}
+	for i := 0; i < len(arr); i += 2 {
+		(*u)[arr[i]] = arr[i+1]
+	}
+	return nil
 }
 
 // mqtt5
