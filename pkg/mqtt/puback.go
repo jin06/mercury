@@ -13,7 +13,7 @@ type Puback struct {
 func (p *Puback) Encode() ([]byte, error) {
 	result := toHeader(PUBACK)
 	if p.Version == MQTT5 {
-		result[1] = 0b00000010
+		result[1] = 0b00000100
 		result = append(result, p.PacketID.ToBytes()...)
 		result = append(result, byte(p.ReasonCode), 0)
 		var length byte = 0
