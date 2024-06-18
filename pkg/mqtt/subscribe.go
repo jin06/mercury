@@ -1,7 +1,7 @@
 package mqtt
 
 type Subscribe struct {
-	MessageID     uint16
+	PacketID      PacketID
 	TopicWildcard TopicWildcard
 	Payload       []Subscription
 }

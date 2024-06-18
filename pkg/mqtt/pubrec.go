@@ -1,5 +1,5 @@
 package mqtt
 
 type Pubrec struct {
-	MessageID uint16
+	PacketID PacketID
 }

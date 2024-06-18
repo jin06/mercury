@@ -1,5 +1,5 @@
 package mqtt
 
 type Unsuback struct {
-	MessageID uint16
+	PacketID PacketID
 }

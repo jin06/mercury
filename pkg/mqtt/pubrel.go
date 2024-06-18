@@ -1,7 +1,7 @@
 package mqtt
 
 type Pubrecl struct {
-	QoS       QoS
-	Dup       bool
-	MessageID uint16
+	PacketID PacketID
+	QoS      QoS
+	Dup      bool
 }
