@@ -142,13 +142,28 @@ func strToBytes(s string) ([]byte, error) {
 func readVariableInt(r io.Reader) (uint32, error) {
 	var res uint32
 	for i := 0; i < 4; i++ {
-		res = res << 7
 		b, err := readByte(r)
 		if err != nil {
 			return res, err
 		}
-		res += uint32(0b01111111 & b)
+		res = res + uint32(0b01111111&b<<(7*i))
 		if 0b10000000&b != 0b10000000 {
+			break
+		}
+	}
+	return res, nil
+}
+
+func encodeVariableInt(val uint32) ([]byte, error) {
+	res := []byte{}
+	for i := 0; i < 4; i++ {
+		b := byte(val % 128)
+		val = val / 128
+		if val > 0 {
+			b = 0b10000000 | b
+		}
+		res = append(res, b)
+		if val <= 0 {
 			break
 		}
 	}
