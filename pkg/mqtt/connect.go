@@ -213,63 +213,6 @@ func decodeProperties(reader io.Reader) (result *Properties, err error) {
 	return
 }
 
-func encodeProperties(props *Properties) (result []byte, err error) {
-	if props == nil {
-		return
-	}
-	result = []byte{0}
-
-	if props.SessionExpiryInterval != 0 {
-		result[0] += 5
-		result = append(result, 0x11)
-		result = append(result, uint32ToBytes(props.SessionExpiryInterval)...)
-	}
-
-	if props.RequestResponseInformation != 0 {
-		result[0] += 2
-		result = append(result, 0x19)
-		result = append(result, props.RequestResponseInformation)
-	}
-	if props.RequestProblemInformation != 1 {
-		result[0] += 2
-		result = append(result, 0x17)
-		result = append(result, props.RequestProblemInformation)
-	}
-	if props.ReceiveMaximum != 65535 {
-		result[0] += 3
-		result = append(result, 0x21)
-		result = append(result, uint16ToBytes(props.ReceiveMaximum)...)
-	}
-	if props.MaximumPacketSize != -1 {
-		result[0] += 5
-		result = append(result, 0x27)
-		result = append(result, uint32ToBytes(uint32(props.MaximumPacketSize))...)
-	}
-	if props.TopicAliasMax != 0 {
-		result[0] += 3
-		result = append(result, 0x22)
-		result = append(result, uint16ToBytes(props.TopicAliasMax)...)
-	}
-	if props.UserProperties != nil {
-		var buf []byte
-		for key, val := range props.UserProperties {
-			if buf, err = strToBytes(key); err != nil {
-				return
-			} else {
-				result = append(result, buf...)
-				result[0] += byte(len(buf))
-			}
-			if buf, err = strToBytes(val); err != nil {
-				return
-			} else {
-				result = append(result, buf...)
-				result[0] += byte(len(buf))
-			}
-		}
-	}
-	return
-}
-
 func (c *Connect) Encode() (result []byte, err error) {
 	//Fixed header
 	result = toHeader(CONNECT)
@@ -365,14 +308,14 @@ func (u *UserProperties) fromReader(reader io.Reader) error {
 
 // mqtt5
 type Properties struct {
-	RequestProblemInformation  byte
-	RequestResponseInformation byte
+	RequestProblemInformation  *byte
+	RequestResponseInformation *byte
 	// SessionExpiryInterval second
-	SessionExpiryInterval uint32
+	SessionExpiryInterval *uint32
 	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
-	ReceiveMaximum uint16
+	ReceiveMaximum *uint16
 	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
-	MaximumPacketSize int64
-	TopicAliasMax     uint16
-	UserProperties    UserProperties
+	MaximumPacketSize *uint32
+	TopicAliasMax     *uint16
+	UserProperties    *UserProperties
 }

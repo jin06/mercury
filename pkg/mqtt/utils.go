@@ -114,6 +114,13 @@ func uint32ToBytes(source uint32) []byte {
 	}
 }
 
+func packetIDToBytes(id PacketID) []byte {
+	return []byte{
+		byte(id >> 8),
+		byte(id),
+	}
+}
+
 func uint16ToBytes(source uint16) []byte {
 	return []byte{
 		byte(source >> 8),

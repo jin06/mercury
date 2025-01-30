@@ -18,12 +18,21 @@ type Publish struct {
 	Version                ProtocolVersion
 }
 
-func (p *Publish) Encode([]byte, error) {
+func (p *Publish) Encode() ([]byte, error) {
+	// write header
 	result := toHeader(PUBLISH)
 	if p.Dup {
 		result[0] |= 0b00001000
 	}
 	result[0] |= (byte(p.Qos) << 1)
+	// write topic name
+	if bytes, err := strToBytes(p.Topic); err != nil {
+		return nil, err
+	} else {
+		result = append(result, bytes...)
+	}
+	// write message ID
+	result = append(result, packetIDToBytes(p.PacketID)...)
 
 	if p.Version == MQTT5 {
 
