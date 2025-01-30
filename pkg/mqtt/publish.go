@@ -15,6 +15,7 @@ type Publish struct {
 	UserProperties         UserProperties
 	SubscriptionIdentifier uint32
 	ContentType            string
+	Version                ProtocolVersion
 }
 
 func (p *Publish) Encode([]byte, error) {
@@ -24,7 +25,7 @@ func (p *Publish) Encode([]byte, error) {
 	}
 	result[0] |= (byte(p.Qos) << 1)
 
-	if p.Version = MQTT5 {
+	if p.Version == MQTT5 {
 
 	}
 }
