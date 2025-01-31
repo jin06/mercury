@@ -12,7 +12,7 @@ type Publish struct {
 	TopicAlias             uint16 // from mqtt5
 	ResponseTopic          string // from mqtt5
 	CorrelationData        []byte // from mqtt5
-	UserProperties         UserProperties
+	Properties             *Properties
 	SubscriptionIdentifier uint32
 	ContentType            string
 	Version                ProtocolVersion
@@ -35,6 +35,13 @@ func (p *Publish) Encode() ([]byte, error) {
 	result = append(result, packetIDToBytes(p.PacketID)...)
 
 	if p.Version == MQTT5 {
-
+		bytes, err := encodeProperties(p.Properties)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, bytes...)
 	}
+	result = append(result, p.Payload...)
+
+	return result, nil
 }

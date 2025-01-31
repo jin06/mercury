@@ -19,6 +19,14 @@ func readUint64(reader io.Reader) (uint64, error) {
 	return utils.ToUint64(res)
 }
 
+func readUint64Ptr(reader io.Reader) (*uint64, error) {
+	res, err := readUint64(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func readUint32(reader io.Reader) (uint32, error) {
 	res, err := read(reader, 4)
 	if err != nil {
@@ -27,12 +35,28 @@ func readUint32(reader io.Reader) (uint32, error) {
 	return utils.ToUint32(res)
 }
 
+func readUint32Ptr(reader io.Reader) (*uint32, error) {
+	res, err := readUint32(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func readUint16(reader io.Reader) (uint16, error) {
 	res, err := read(reader, 2)
 	if err != nil {
 		return 0, err
 	}
 	return utils.ToUint16(res)
+}
+
+func readUint16Ptr(reader io.Reader) (*uint16, error) {
+	res, err := readUint16(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func readBool(reader io.Reader) (bool, error) {
@@ -49,12 +73,28 @@ func readBool(reader io.Reader) (bool, error) {
 	return false, ErrProtocol
 }
 
+func readBoolPtr(reader io.Reader) (*bool, error) {
+	res, err := readBool(reader)
+	if err != nil {
+		return &res, err
+	}
+	return nil, err
+}
+
 func readUint8(reader io.Reader) (uint8, error) {
 	res, err := readByte(reader)
 	if err != nil {
 		return 0, err
 	}
 	return uint8(res), nil
+}
+
+func readUint8Ptr(reader io.Reader) (*uint8, error) {
+	res, err := readUint8(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func readBytes(reader io.Reader, n int) ([]byte, error) {
@@ -77,9 +117,25 @@ func readByte(reader io.Reader) (byte, error) {
 	return res[0], nil
 }
 
-func readStr(reader io.Reader) (str string, err error) {
-	str, _, err = readStrN(reader)
-	return
+func readBytePtr(reader io.Reader) (*byte, error) {
+	res, err := readByte(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func readStr(reader io.Reader) (string, error) {
+	str, _, err := readStrN(reader)
+	return str, err
+}
+
+func readStrPtr(reader io.Reader) (*string, error) {
+	res, err := readStr(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func readStrN(reader io.Reader) (str string, n int, err error) {
@@ -175,4 +231,60 @@ func encodeVariableInt(val uint32) ([]byte, error) {
 		}
 	}
 	return res, nil
+}
+
+func decodeKeepAlive(l []byte) uint16 {
+	res, _ := utils.ToUint16(l)
+	return res
+}
+
+func decodeLength(b []byte) (l uint16, err error) {
+	return utils.ToUint16(b)
+}
+
+func readLength(reader io.Reader) (l uint16, err error) {
+	b := make([]byte, 2)
+	if _, err = reader.Read(b); err != nil {
+		return
+	}
+	return decodeLength(b)
+}
+
+func decodeProtocolName(reader io.Reader) (res []byte, err error) {
+	// var l uint16
+	// if l, err = decodeLength(reader); err != nil {
+	// return
+	// }
+	// res = make([]byte, l)
+	// _, err = reader.Read(res)
+	// return
+	return decodeUTF8(reader)
+}
+
+// func decodeUTF8(reader io.Reader) (res []byte, err error) {
+// 	var l uint16
+// 	if l, err = decodeLength(reader); err != nil {
+// 		return
+// 	}
+// 	res = make([]byte, l)
+// 	_, err = reader.Read(res)
+// 	return
+// }
+
+func readUTF8(reader io.Reader) (res []byte, err error) {
+	var l uint16
+	if l, err = readLength(reader); err != nil {
+		return
+	}
+	res = make([]byte, l)
+	_, err = reader.Read(res)
+	return
+}
+
+func readUTF8Str(reader io.Reader) (res string, err error) {
+	b, err := readUTF8(reader)
+	if err != nil {
+		return
+	}
+	return string(b), err
 }

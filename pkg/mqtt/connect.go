@@ -51,7 +51,15 @@ func (c *Connect) String() string {
 	return ""
 }
 
-func (c *Connect) Decode(reader io.Reader) (err error) {
+func (c *Connect) Decode(data []byte) (err error) {
+	return
+}
+
+func (c *Connect) Read(reader io.Reader) error {
+	return nil
+}
+
+func (c *Connect) Write(reader io.Reader) (err error) {
 	// buf := make([]byte, 16)
 
 	if _, err := decodeProtocolName(reader); err != nil {
@@ -109,107 +117,6 @@ func (c *Connect) Decode(reader io.Reader) (err error) {
 		}
 	}
 
-	return
-}
-
-func decodeProperties(reader io.Reader) (result *Properties, err error) {
-	result = &Properties{
-		UserProperties:    make(UserProperties),
-		MaximumPacketSize: -1,
-	}
-	var total int
-	if res, err := readByte(reader); err != nil {
-		return result, err
-	} else {
-		total = int(res)
-	}
-
-	for i := 0; i < total; {
-		var identifier byte
-		if identifier, err = readByte(reader); err != nil {
-			return
-		}
-		i++
-
-		switch identifier {
-		case 0x11:
-			{
-				i += 4
-				if result.SessionExpiryInterval, err = readUint32(reader); err != nil {
-					return
-				}
-			}
-		case 0x19:
-			{
-				i++
-				result.RequestResponseInformation, err = readByte(reader)
-				if err != nil {
-					return
-				}
-			}
-		case 0x17:
-			{
-				i++
-				result.RequestProblemInformation, err = readByte(reader)
-				if err != nil {
-					return
-				}
-			}
-			// receive max
-		case 0x21:
-			{
-				i += 2
-				if result.ReceiveMaximum, err = readUint16(reader); err != nil {
-					return
-				}
-			}
-			// Max packet size
-		case 0x27:
-			{
-				i += 4
-				var max uint32
-				if max, err = readUint32(reader); err != nil {
-					return
-				} else if max == 0 {
-					err = ErrMaximumPacketSize
-					return
-				}
-				result.MaximumPacketSize = int64(max)
-			}
-			//  Topic Alias Max
-		case 0x22:
-			{
-				i += 2
-				if result.TopicAliasMax, err = readUint16(reader); err != nil {
-					return
-				}
-			}
-			// User properties
-		case 0x26:
-			{
-				var ul int
-				list := []string{}
-				for j := 0; j < total-i; {
-					var val string
-					var n int
-					if val, n, err = readStrN(reader); err != nil {
-						return
-					}
-					ul += n
-					j = j + n
-					list = append(list, val)
-				}
-				if len(list)%2 == 1 {
-					return result, ErrProtocol
-				}
-				for i := 0; i < len(list); i += 2 {
-					result.UserProperties[list[i]] = result.UserProperties[list[i+1]]
-				}
-				i += ul
-				return
-			}
-		}
-	}
 	return
 }
 

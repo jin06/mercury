@@ -2,6 +2,19 @@ package mqtt
 
 type ReasonCode byte
 
+type Error struct {
+	code ReasonCode
+	msg  string
+}
+
+func (e *Error) Error() string {
+	return e.msg
+}
+
+func (e *Error) Code() ReasonCode {
+	return e.code
+}
+
 // var (
 // 	BASE_SUCCESS = 0x00
 // )
@@ -18,6 +31,7 @@ var (
 var (
 	V5_SUCCESS                                ReasonCode = 0x00
 	V5_Normal_Disconnection                   ReasonCode = 0x00
+	Err_V5_Normal_Disconnection                          = Error{code: V5_Normal_Disconnection, msg: "Normal disconnection"}
 	V5_Granted_QoS0                           ReasonCode = 0x00
 	V5_Granted_QoS1                           ReasonCode = 0x01
 	V5_Granted_QoS2                           ReasonCode = 0x02
