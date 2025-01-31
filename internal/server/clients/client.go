@@ -57,7 +57,7 @@ func (c *Client) HandlePacket(p mqtt.Packet) {
 			},
 		}
 		if val.Version == mqtt.MQTT5 {
-			ack.ReasonCode = mqtt.V5_CONACK_SUCCESS
+			ack.ReasonCode = mqtt.V5_SUCCESS
 		} else {
 			ack.ReasonCode = mqtt.V3_CONNACK_ACCEPT
 		}

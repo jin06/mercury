@@ -7,7 +7,7 @@ import (
 
 func TestEncodeConnack(t *testing.T) {
 	ack := Connack{
-		ReasonCode: V5_CONACK_SUCCESS,
+		ReasonCode: V5_SUCCESS,
 		Properties: &ConnackProperties{
 			MaximumPacketSize:               1048576,
 			TopicAliasMaximum:               65535,
