@@ -2,9 +2,6 @@ package mqtt
 
 import (
 	"errors"
-	"io"
-
-	"github.com/jin06/mercury/pkg/utils"
 )
 
 func variableByteInteger(length int) ([]byte, error) {
@@ -40,5 +37,4 @@ func bytesToUint64(l []byte) (ret uint64, err error) {
 		ret = ret + uint64(l[i])
 	}
 	return
-
 }
