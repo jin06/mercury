@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/jin06/mercury/logs"
-	"github.com/jin06/mercury/pkg/encoder"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
@@ -26,10 +25,10 @@ type Client struct {
 
 func (c *Client) Run(ctx context.Context) (err error) {
 	c.server.On(c)
-	reader := encoder.NewReader(c.Conn)
+	reader := mqtt.NewReader(c.Conn)
 	for {
 		// b := make([]byte, 1000)
-		p, err := reader.ReadPacket()
+		p, err := mqtt.ReadPacket(reader)
 		if err != nil {
 			panic(err)
 		}
@@ -38,7 +37,6 @@ func (c *Client) Run(ctx context.Context) (err error) {
 		// os.Exit(1)
 		// logs.Logger.Info().Msgf("%b", b)
 	}
-	return
 }
 
 func (c *Client) HandlePacket(p mqtt.Packet) {

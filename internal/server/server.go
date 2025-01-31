@@ -18,7 +18,6 @@ type Server struct {
 
 func (s *Server) Run() (err error) {
 	select {}
-	return
 }
 
 func (s *Server) On(c *clients.Client) {

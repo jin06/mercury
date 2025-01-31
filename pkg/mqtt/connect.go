@@ -5,6 +5,10 @@ import (
 	"io"
 )
 
+func NewConnect(header *FixedHeader) *Connect {
+	return &Connect{FixHeader: header}
+}
+
 type Connect struct {
 	Version ProtocolVersion
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
@@ -15,6 +19,7 @@ type Connect struct {
 	Password   string
 	Properties *Properties
 	Will       *Will
+	FixHeader  *FixedHeader
 }
 
 func (c *Connect) protocolName() string {
@@ -55,14 +60,13 @@ func (c *Connect) Decode(data []byte) (err error) {
 	return
 }
 
-func (c *Connect) Read(reader io.Reader) error {
+func (c *Connect) Write(reader io.Writer) error {
 	return nil
 }
 
-func (c *Connect) Write(reader io.Reader) (err error) {
+func (c *Connect) Read(reader io.Reader) (err error) {
 	// buf := make([]byte, 16)
-
-	if _, err := decodeProtocolName(reader); err != nil {
+	if _, err := readProtocolName(reader); err != nil {
 		return err
 	}
 	buf := make([]byte, 4)
@@ -84,7 +88,7 @@ func (c *Connect) Write(reader io.Reader) (err error) {
 	// measured in seconds
 	c.KeepAlive = decodeKeepAlive(buf[2:])
 	if c.Version == MQTT5 {
-		properties, err := decodeProperties(reader)
+		properties, err := readProperties(reader)
 		if err != nil {
 			return err
 		}

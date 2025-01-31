@@ -250,15 +250,8 @@ func readLength(reader io.Reader) (l uint16, err error) {
 	return decodeLength(b)
 }
 
-func decodeProtocolName(reader io.Reader) (res []byte, err error) {
-	// var l uint16
-	// if l, err = decodeLength(reader); err != nil {
-	// return
-	// }
-	// res = make([]byte, l)
-	// _, err = reader.Read(res)
-	// return
-	return decodeUTF8(reader)
+func readProtocolName(reader io.Reader) (res []byte, err error) {
+	return readUTF8(reader)
 }
 
 // func decodeUTF8(reader io.Reader) (res []byte, err error) {

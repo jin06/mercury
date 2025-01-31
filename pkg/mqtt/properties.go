@@ -90,10 +90,7 @@ func decodeProperties(data []byte) (*Properties, error) {
 }
 
 func readProperties(reader io.Reader) (result *Properties, err error) {
-	result = &Properties{
-		UserProperties:    make(UserProperties),
-		MaximumPacketSize: -1,
-	}
+	result = &Properties{}
 	var total int
 	if res, err := readByte(reader); err != nil {
 		return result, err
@@ -112,14 +109,14 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x11:
 			{
 				i += 4
-				if result.SessionExpiryInterval, err = readUint32(reader); err != nil {
+				if result.SessionExpiryInterval, err = readUint32Ptr(reader); err != nil {
 					return
 				}
 			}
 		case 0x19:
 			{
 				i++
-				result.RequestResponseInformation, err = readByte(reader)
+				result.RequestResponseInformation, err = readBytePtr(reader)
 				if err != nil {
 					return
 				}
@@ -127,7 +124,7 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x17:
 			{
 				i++
-				result.RequestProblemInformation, err = readByte(reader)
+				result.RequestProblemInformation, err = readBytePtr(reader)
 				if err != nil {
 					return
 				}
@@ -136,7 +133,7 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x21:
 			{
 				i += 2
-				if result.ReceiveMaximum, err = readUint16(reader); err != nil {
+				if result.ReceiveMaximum, err = readUint16Ptr(reader); err != nil {
 					return
 				}
 			}
@@ -144,20 +141,17 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x27:
 			{
 				i += 4
-				var max uint32
-				if max, err = readUint32(reader); err != nil {
-					return
-				} else if max == 0 {
-					err = ErrMaximumPacketSize
-					return
+				if max, err := readUint32Ptr(reader); err != nil {
+					return nil, err
+				} else if max == nil {
+					result.MaximumPacketSize = max
 				}
-				result.MaximumPacketSize = int64(max)
 			}
 			//  Topic Alias Max
 		case 0x22:
 			{
 				i += 2
-				if result.TopicAliasMax, err = readUint16(reader); err != nil {
+				if result.TopicAliasMax, err = readUint16Ptr(reader); err != nil {
 					return
 				}
 			}
@@ -179,9 +173,12 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 				if len(list)%2 == 1 {
 					return result, ErrProtocol
 				}
+				userProperties := UserProperties{}
+
 				for i := 0; i < len(list); i += 2 {
-					result.UserProperties[list[i]] = result.UserProperties[list[i+1]]
+					userProperties[list[i]] = userProperties[list[i+1]]
 				}
+				result.UserProperties = &userProperties
 				i += ul
 				return
 			}
