@@ -18,11 +18,24 @@ type Payload struct{}
 
 // Packet for mqtt packet
 type Packet interface {
-	// String() string
+	// Encode all packet with header
 	Encode() ([]byte, error)
+	// Encode body without header, encode body(payload)
+	EncodeBody() ([]byte, error)
+	// Decode with header to bytes
 	Decode([]byte) error
+	// Decode body only
+	DecodeBody([]byte)
+	// Read all with header
 	Read(io.Reader) error
+	// Only body
+	ReadBody(io.Reader) error
+	// Write all to writer with header
 	Write(io.Writer) error
+	// Only body
+	WriteBody(io.Writer) error
+	// Remaining length
+	Len() uint64
 }
 
 // FixedHeader
@@ -33,6 +46,14 @@ type FixedHeader struct {
 	PacketType      PacketType
 	Flags           byte
 	RemainingLength uint64
+}
+
+func (f *FixedHeader) Encode() ([]byte, error) {
+	panic("todo")
+}
+
+func (f *FixedHeader) Decode([]byte) error {
+	panic("todo")
 }
 
 func (f *FixedHeader) Read(reader *Reader) error {
