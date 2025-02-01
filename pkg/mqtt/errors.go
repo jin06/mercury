@@ -7,4 +7,5 @@ var (
 	ErrUnsupportVersion  = errors.New("unsupported version")
 	ErrNullClientID      = errors.New("null client id")
 	ErrMaximumPacketSize = errors.New("maximum packet size can't by zero")
+	ErrBytesShorter      = errors.New("the length of []byte is shorter than expected")
 )

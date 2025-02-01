@@ -45,15 +45,35 @@ type Packet interface {
 type FixedHeader struct {
 	PacketType      PacketType
 	Flags           byte
-	RemainingLength uint64
+	RemainingLength int
 }
 
 func (f *FixedHeader) Encode() ([]byte, error) {
 	panic("todo")
 }
 
-func (f *FixedHeader) Decode([]byte) error {
-	panic("todo")
+// Decode decodes a fixed header from the given byte slice ([]byte).
+// It extracts the packet type, flags, and remaining length (decoded using decodeVariableByteInteger).
+// The function returns the number of bytes consumed and any error encountered during decoding.
+//
+// Parameters:
+//   - data []byte: The byte slice containing the encoded fixed header.
+//
+// Returns:
+//   - int: The number of bytes consumed during decoding.
+//   - error: Any error encountered (e.g., byte slice too short or decoding issue).
+func (f *FixedHeader) Decode(data []byte) (int, error) {
+	if len(data) < 2 {
+		return 0, ErrBytesShorter
+	}
+	f.PacketType = PacketType(data[0] >> 4)
+	f.Flags = 0b0001111 & data[0]
+	length, n, err := decodeVariableByteInteger(data[1:])
+	if err != nil {
+		return n + 1, err
+	}
+	f.RemainingLength = length
+	return n + 1, nil
 }
 
 func (f *FixedHeader) Read(reader *Reader) error {
