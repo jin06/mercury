@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-func variableByteInteger(length int) ([]byte, error) {
+func encodeVariableByteInteger(length uint64) ([]byte, error) {
 	if length < 0 {
 		return nil, errors.New("length cannot be negative")
 	}
@@ -54,6 +54,15 @@ func readVariableByteInteger(reader *Reader) (uint64, error) {
 	}
 
 	return length, nil
+}
+
+func writeVariableByteInteger(writer *Writer, length uint64) error {
+	bytes, err := encodeVariableByteInteger(length)
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(bytes)
+	return err
 }
 
 func bytesToUint64(l []byte) (ret uint64, err error) {

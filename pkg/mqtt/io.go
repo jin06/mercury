@@ -22,6 +22,7 @@ type Writer struct {
 	*bufio.Writer
 }
 
+// Read FixedHeader and remaining length
 func ReadPacket(reader *Reader) (packet Packet, err error) {
 	header := &FixedHeader{}
 	if err := header.Read(reader); err != nil {

@@ -10,7 +10,8 @@ func NewConnect(header *FixedHeader) *Connect {
 }
 
 type Connect struct {
-	Version ProtocolVersion
+	Version   ProtocolVersion
+	FixHeader *FixedHeader
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
 	Clean      bool
 	KeepAlive  uint16
@@ -19,7 +20,6 @@ type Connect struct {
 	Password   string
 	Properties *Properties
 	Will       *Will
-	FixHeader  *FixedHeader
 }
 
 func (c *Connect) protocolName() string {
@@ -229,4 +229,9 @@ type Properties struct {
 	MaximumPacketSize *uint32
 	TopicAliasMax     *uint16
 	UserProperties    *UserProperties
+}
+
+func (p *Properties) Len() uint64 {
+	// unimplemented
+	return 0
 }

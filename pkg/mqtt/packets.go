@@ -21,8 +21,8 @@ type Packet interface {
 	// String() string
 	Encode() ([]byte, error)
 	Decode([]byte) error
-	Write(io.Writer) error
 	Read(io.Reader) error
+	Write(io.Writer) error
 }
 
 // FixedHeader
@@ -48,4 +48,12 @@ func (f *FixedHeader) Read(reader *Reader) error {
 	}
 	f.RemainingLength = l
 	return nil
+}
+
+func (f *FixedHeader) Write(writer *Writer) error {
+	b := byte(f.PacketType<<4) | (f.Flags)
+	if err := writer.WriteByte(b); err != nil {
+		return err
+	}
+	return writeVariableByteInteger(writer, f.RemainingLength)
 }

@@ -2,7 +2,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/jin06/mercury/logs"
@@ -30,6 +29,7 @@ func (c *Client) Run(ctx context.Context) (err error) {
 		// b := make([]byte, 1000)
 		p, err := mqtt.ReadPacket(reader)
 		if err != nil {
+			logs.Logger.Err(err)
 			panic(err)
 		}
 		logs.Logger.Info().Msgf("%v", p)
@@ -40,33 +40,20 @@ func (c *Client) Run(ctx context.Context) (err error) {
 }
 
 func (c *Client) HandlePacket(p mqtt.Packet) {
-	val, ok := p.(*mqtt.Connect)
-	fmt.Println(123)
-	if ok {
-		ack := mqtt.Connack{
-			Properties: &mqtt.ConnackProperties{
-				MaximumPacketSize:               1000,
-				RetainAvailable:                 true,
-				SharedSubscriptionAvailable:     true,
-				SubscriptionIdentifierAvailable: true,
-				TopicAliasMaximum:               99,
-				WildcardSubscriptionAvailable:   true,
-				ReceiveMaximum:                  111,
-			},
+	var response mqtt.Packet
+	switch p.(type) {
+	case *mqtt.Connect:
+		{
+			response = &mqtt.Connack{
+				FixHeader: &mqtt.FixedHeader{
+					PacketType:      mqtt.CONNACK,
+					Flags:           0,
+					RemainingLength: 2,
+				},
+			}
 		}
-		if val.Version == mqtt.MQTT5 {
-			ack.ReasonCode = mqtt.V5_SUCCESS
-		} else {
-			ack.ReasonCode = mqtt.V3_CONNACK_ACCEPT
-		}
-		fmt.Println(val.Version)
-		bytes, err := ack.Encode(val.Version)
-		fmt.Println(bytes)
-		if err != nil {
-			panic(err)
-		}
-		c.Conn.Write(bytes)
 	}
+	response.Write(c.Conn)
 }
 
 func (c *Client) Connect() {

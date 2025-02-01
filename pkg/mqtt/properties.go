@@ -77,7 +77,7 @@ func encodeProperties(props *Properties) ([]byte, error) {
 			}
 		}
 	}
-	lengthBytes, err := variableByteInteger(len(result))
+	lengthBytes, err := encodeVariableByteInteger(uint64(len(result)))
 	if err != nil {
 		return nil, err
 	}
@@ -185,4 +185,9 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		}
 	}
 	return
+}
+
+// unimplemented
+func writeProperties(writer io.Writer, p *Properties) error {
+	return nil
 }

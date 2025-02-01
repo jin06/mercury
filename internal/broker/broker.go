@@ -25,10 +25,10 @@ func (b *Broker) Run(ctx context.Context) (err error) {
 	// create client -> conn -> read bytes -> tranlate packet -> server -> if publish packet -> search topics tree -> send client
 	// server
 
-	b.listen()
+	b.listen(ctx)
 	return
 }
-func (b *Broker) listen() {
+func (b *Broker) listen(ctx context.Context) {
 	listener, err := net.Listen("tcp", ":1883")
 	if err != nil {
 		panic(err)
@@ -40,6 +40,6 @@ func (b *Broker) listen() {
 			panic(err)
 		}
 		client := clients.NewClient(b.Server, conn)
-		go client.Run(context.Background())
+		go client.Run(ctx)
 	}
 }
