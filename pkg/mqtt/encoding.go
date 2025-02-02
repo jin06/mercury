@@ -124,3 +124,23 @@ func bytesToUint64(l []byte) (ret uint64, err error) {
 	}
 	return
 }
+
+func decodeUTF8(data []byte) (res []byte, n int, err error) {
+	if len(data) < 2 {
+		return nil, 0, ErrBytesShorter
+	}
+	l, err := decodeLength(data[:2])
+	if err != nil {
+		return nil, 0, err
+	}
+	total := 2 + int(l)
+	if len(data) < total {
+		return nil, 0, ErrUTFLengthShoter
+	}
+	return data[2:total], total, nil
+}
+
+func decodeUTF8Str(data []byte) (string, int, error) {
+	r, n, err := decodeUTF8(data)
+	return string(r), n, err
+}

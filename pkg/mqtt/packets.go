@@ -70,7 +70,11 @@ func (f *FixedHeader) Decode(data []byte) (int, error) {
 	f.Flags = 0b0001111 & data[0]
 	length, n, err := decodeVariableByteInteger(data[1:])
 	if err != nil {
-		return n + 1, err
+		return 0, err
+	}
+	total := 1 + n + length
+	if len(data) != total {
+		return 0, ErrPacketEncoding
 	}
 	f.RemainingLength = length
 	return n + 1, nil

@@ -13,13 +13,14 @@ type Connect struct {
 	Version   ProtocolVersion
 	FixHeader *FixedHeader
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
-	Clean      bool
-	KeepAlive  uint16
-	ClientID   string
-	Username   string
-	Password   string
-	Properties *Properties
-	Will       *Will
+	Clean        bool
+	ProtocolName string
+	KeepAlive    uint16
+	ClientID     string
+	Username     string
+	Password     string
+	Properties   *Properties
+	Will         *Will
 }
 
 func (c *Connect) protocolName() string {
@@ -56,8 +57,14 @@ func (c *Connect) String() string {
 	return ""
 }
 
-func (c *Connect) Decode(data []byte) (err error) {
-	return
+func (c *Connect) Decode(data []byte) error {
+	l, err := c.FixHeader.Decode(data)
+	if err != nil {
+		return err
+	}
+	data = data[l:]
+	decodeUTF8Str(data[])
+	return nil
 }
 
 func (c *Connect) Write(reader io.Writer) error {
