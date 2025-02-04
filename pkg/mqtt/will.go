@@ -7,7 +7,7 @@ type Will struct {
 	Message    string
 	QoS        QoS
 	Retain     bool
-	Properties *WillProperties
+	Properties *Properties
 }
 
 type WillProperties struct {

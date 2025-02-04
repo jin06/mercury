@@ -2,7 +2,11 @@ package mqtt
 
 type ProtocolVersion byte
 
-func (v ProtocolVersion) String() string {
+func (v ProtocolVersion) IsMQTT5() bool {
+	return v == MQTT5
+}
+
+func (v ProtocolVersion) Name() string {
 	switch v {
 	case MQTT3:
 		return "mqtt3.1"

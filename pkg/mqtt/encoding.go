@@ -77,10 +77,10 @@ func decodeVariableByteInteger(data []byte) (int, int, error) {
 	return length, n, nil
 }
 
-func readVariableByteInteger(reader *Reader) (uint64, error) {
-	var multiplier uint64 = 1 // Multiplier for each byte (1, 128, 16384, ...)
-	var length uint64 = 0     // The length being built
-	var byteValue byte        // Single byte to read
+func readVariableByteInteger(reader *Reader) (int, error) {
+	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
+	var length int = 0     // The length being built
+	var byteValue byte     // Single byte to read
 
 	for {
 		// Read one byte from the reader
@@ -91,7 +91,7 @@ func readVariableByteInteger(reader *Reader) (uint64, error) {
 		byteValue = b
 
 		// Add the 7 bits to the length value
-		length += uint64(byteValue&0x7F) * multiplier
+		length += int(byteValue&0x7F) * multiplier
 
 		// If the MSB (most significant bit) is 0, it's the last byte
 		if byteValue&0x80 == 0 {
@@ -105,7 +105,7 @@ func readVariableByteInteger(reader *Reader) (uint64, error) {
 	return length, nil
 }
 
-func writeVariableByteInteger(writer *Writer, length uint64) error {
+func writeVariableByteInteger(writer *Writer, length int) error {
 	bytes, err := encodeVariableByteInteger(length)
 	if err != nil {
 		return err
@@ -143,4 +143,16 @@ func decodeUTF8(data []byte) (res []byte, n int, err error) {
 func decodeUTF8Str(data []byte) (string, int, error) {
 	r, n, err := decodeUTF8(data)
 	return string(r), n, err
+}
+
+func decodeProtocolVersion(b byte) (ProtocolVersion, error) {
+	switch b {
+	case 3:
+		return MQTT3, nil
+	case 4:
+		return MQTT4, nil
+	case 5:
+		return MQTT5, nil
+	}
+	return 0, ErrUnsupportVersion
 }

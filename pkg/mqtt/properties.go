@@ -1,6 +1,9 @@
 package mqtt
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 const (
 	IDPayloadFormat              byte = 0x01
@@ -32,38 +35,54 @@ const (
 	IDSharedSubAvailable         byte = 0x2A
 )
 
-func encodeProperties(props *Properties) ([]byte, error) {
-	if props == nil {
-		return []byte{0}, nil
-	}
+// mqtt5
+type Properties struct {
+	RequestProblemInformation  *byte
+	RequestResponseInformation *byte
+	// SessionExpiryInterval second
+	SessionExpiryInterval *uint32
+	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
+	ReceiveMaximum *uint16
+	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
+	MaximumPacketSize *uint32
+	TopicAliasMax     *uint16
+	UserProperties    *UserProperties
+}
+
+func (p *Properties) Len() uint64 {
+	// unimplemented
+	return 0
+}
+
+func (p *Properties) Encode() ([]byte, error) {
 	result := []byte{0}
 
-	if props.SessionExpiryInterval != nil {
+	if p.SessionExpiryInterval != nil {
 		result = append(result, IDSessionExpiryInterval)
-		result = append(result, uint32ToBytes(*props.SessionExpiryInterval)...)
+		result = append(result, uint32ToBytes(*p.SessionExpiryInterval)...)
 	}
 
-	if props.RequestResponseInformation != nil {
-		result = append(result, IDRequestResponseInformation, *props.RequestResponseInformation)
+	if p.RequestResponseInformation != nil {
+		result = append(result, IDRequestResponseInformation, *p.RequestResponseInformation)
 	}
-	if props.RequestProblemInformation != nil {
+	if p.RequestProblemInformation != nil {
 		result = append(result, 0x17)
-		result = append(result, *props.RequestProblemInformation)
+		result = append(result, *p.RequestProblemInformation)
 	}
-	if props.ReceiveMaximum != nil {
+	if p.ReceiveMaximum != nil {
 		result = append(result, 0x21)
-		result = append(result, uint16ToBytes(*props.ReceiveMaximum)...)
+		result = append(result, uint16ToBytes(*p.ReceiveMaximum)...)
 	}
-	if props.MaximumPacketSize != nil {
+	if p.MaximumPacketSize != nil {
 		result = append(result, 0x27)
-		result = append(result, uint32ToBytes(*props.MaximumPacketSize)...)
+		result = append(result, uint32ToBytes(*p.MaximumPacketSize)...)
 	}
-	if props.TopicAliasMax != nil {
+	if p.TopicAliasMax != nil {
 		result = append(result, 0x22)
-		result = append(result, uint16ToBytes(*props.TopicAliasMax)...)
+		result = append(result, uint16ToBytes(*p.TopicAliasMax)...)
 	}
-	if props.UserProperties != nil {
-		for key, val := range *props.UserProperties {
+	if p.UserProperties != nil {
+		for key, val := range *p.UserProperties {
 			result = append(result, IDUserProperties)
 			if buf, err := strToBytes(key); err != nil {
 				return nil, err
@@ -77,16 +96,33 @@ func encodeProperties(props *Properties) ([]byte, error) {
 			}
 		}
 	}
-	lengthBytes, err := encodeVariableByteInteger(uint64(len(result)))
+	lengthBytes, err := encodeVariableByteInteger((len(result)))
 	if err != nil {
 		return nil, err
 	}
 	return append(lengthBytes, result...), nil
 }
 
-func decodeProperties(data []byte) (*Properties, error) {
-	prop := &Properties{}
-	return prop, nil
+func (p *Properties) Decode(data []byte) (int, error) {
+	total, n, err := decodeVariableByteInteger(data)
+	if err != nil {
+		return n, err
+	}
+	// data[n : n+l]
+	for i := n; i < total; {
+		switch data[i] {
+		case IDSessionExpiryInterval:
+			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return 0, err
+			}
+			i = i + 4
+		case IDRequestResponseInformation:
+			p.RequestProblemInformation = new(byte)
+			*p.RequestProblemInformation = data[i]
+			i++
+		}
+	}
+	return n + total, nil
 }
 
 func readProperties(reader io.Reader) (result *Properties, err error) {
@@ -189,5 +225,48 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 
 // unimplemented
 func writeProperties(writer io.Writer, p *Properties) error {
+	return nil
+}
+
+type UserProperties map[string]string
+
+func (u *UserProperties) toBytes() (result []byte, err error) {
+	result = []byte{}
+	for key, val := range *u {
+		if bytes, err := strToBytes(key); err != nil {
+			return result, err
+		} else {
+			result = append(result, bytes...)
+		}
+		if bytes, err := strToBytes(val); err != nil {
+			return result, err
+		} else {
+			result = append(result, bytes...)
+		}
+	}
+	return
+}
+
+func (u *UserProperties) fromReader(reader io.Reader) error {
+	propertyLength, err := readUint8(reader)
+	if err != nil {
+		return err
+	}
+	// buf, err := readBytes(reader, int(propertyLength))
+	arr := []string{}
+	for i := 0; i <= int(propertyLength); {
+		str, n, err := readStrN(reader)
+		if err != nil {
+			return err
+		}
+		arr = append(arr, str)
+		i += n
+	}
+	if len(arr)%2 == 1 {
+		return errors.New("count of string can't fulfil requirements of key-value pair")
+	}
+	for i := 0; i < len(arr); i += 2 {
+		(*u)[arr[i]] = arr[i+1]
+	}
 	return nil
 }

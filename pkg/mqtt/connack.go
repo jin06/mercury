@@ -13,17 +13,6 @@ type Connack struct {
 	SessionPresent bool
 }
 
-type ConnackProperties struct {
-	MaximumPacketSize               uint32
-	RetainAvailable                 bool
-	SharedSubscriptionAvailable     bool
-	SubscriptionIdentifierAvailable bool
-	TopicAliasMaximum               uint16
-	WildcardSubscriptionAvailable   bool
-	ReceiveMaximum                  uint16
-	SessionExpiryInterval           uint32
-}
-
 func (c *Connack) Encode() (result []byte, err error) {
 	// result = toHeader(CONNACK)
 	// result = append(result, 0, byte(c.ReasonCode))
@@ -72,8 +61,16 @@ func (c *Connack) Encode() (result []byte, err error) {
 	return
 }
 
-func (c *Connack) Decode(data []byte) error {
-	return nil
+func (c *Connack) EncodeBody() ([]byte, error) {
+	return nil, nil
+}
+
+func (c *Connack) Decode(data []byte) (n int, err error) {
+	return
+}
+
+func (c *Connack) DecodeBody(data []byte) (n int, err error) {
+	return
 }
 
 func (c *Connack) Read(reader io.Reader) (err error) {
@@ -102,17 +99,25 @@ func (c *Connack) Read(reader io.Reader) (err error) {
 	return
 }
 
-func (c *Connack) Write(writer io.Writer) error {
-	_, err := writer.Write([]byte{boolTobyte(c.SessionPresent)})
+func (c *Connack) ReadBody(r io.Reader) (err error) {
+	return
+}
+
+func (c *Connack) Write(w io.Writer) error {
+	_, err := w.Write([]byte{boolTobyte(c.SessionPresent)})
 	if err != nil {
 		return err
 	}
-	_, err = writer.Write([]byte{byte(c.ReasonCode)})
+	_, err = w.Write([]byte{byte(c.ReasonCode)})
 	if err != nil {
 		return err
 	}
 	if c.Properties != nil {
-		writeProperties(writer, c.Properties)
+		writeProperties(w, c.Properties)
 	}
+	return nil
+}
+
+func (c *Connack) WriteBody(w io.Writer) error {
 	return nil
 }

@@ -35,11 +35,13 @@ func (p *Publish) Encode() ([]byte, error) {
 	result = append(result, packetIDToBytes(p.PacketID)...)
 
 	if p.Version == MQTT5 {
-		bytes, err := encodeProperties(p.Properties)
-		if err != nil {
-			return nil, err
+		if p.Properties != nil {
+			bytes, err := p.Properties.Encode()
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, bytes...)
 		}
-		result = append(result, bytes...)
 	}
 	result = append(result, p.Payload...)
 

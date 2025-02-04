@@ -23,9 +23,9 @@ type Packet interface {
 	// Encode body without header, encode body(payload)
 	EncodeBody() ([]byte, error)
 	// Decode with header to bytes
-	Decode([]byte) error
+	Decode([]byte) (int, error)
 	// Decode body only
-	DecodeBody([]byte)
+	DecodeBody([]byte) (int, error)
 	// Read all with header
 	Read(io.Reader) error
 	// Only body
@@ -34,8 +34,6 @@ type Packet interface {
 	Write(io.Writer) error
 	// Only body
 	WriteBody(io.Writer) error
-	// Remaining length
-	Len() uint64
 }
 
 // FixedHeader

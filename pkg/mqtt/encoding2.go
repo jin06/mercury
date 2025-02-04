@@ -35,8 +35,20 @@ func readUint32(reader io.Reader) (uint32, error) {
 	return utils.ToUint32(res)
 }
 
+func decodeUint32(data []byte) (uint32, error) {
+	return utils.ToUint32(data)
+}
+
 func readUint32Ptr(reader io.Reader) (*uint32, error) {
 	res, err := readUint32(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func decodeUint32Ptr(data []byte) (*uint32, error) {
+	res, err := decodeUint32(data)
 	if err != nil {
 		return nil, err
 	}
