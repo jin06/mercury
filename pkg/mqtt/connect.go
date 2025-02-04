@@ -87,12 +87,6 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 	// total := len(data)
 	var start int
 
-	if n, err := c.FixHeader.Decode(data); err != nil {
-		return start, err
-	} else {
-		start = n
-	}
-
 	if protocol, n, err := decodeUTF8Str(data[start:]); err != nil {
 		return start, err
 	} else {
@@ -204,7 +198,7 @@ func (c *Connect) ReadBody(r *Reader) error {
 			return ErrBytesShorter
 		}
 	}
-	if _, err := c.Decode(data); err != nil {
+	if _, err := c.DecodeBody(data); err != nil {
 		return err
 	}
 	return nil
