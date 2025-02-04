@@ -110,7 +110,9 @@ func (p *Properties) Decode(data []byte) (int, error) {
 	}
 	// data[n : n+l]
 	for i := n; i < total; {
-		switch data[i] {
+		identifier := data[i]
+		i++
+		switch identifier {
 		case IDSessionExpiryInterval:
 			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
 				return 0, err
@@ -120,6 +122,8 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			p.RequestProblemInformation = new(byte)
 			*p.RequestProblemInformation = data[i]
 			i++
+		default:
+			return 0, ErrProtocolViolation
 		}
 	}
 	return n + total, nil

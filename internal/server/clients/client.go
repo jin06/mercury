@@ -32,10 +32,10 @@ func (c *Client) Run(ctx context.Context) (err error) {
 		p, err := mqtt.ReadPacket(c.reader)
 		if err != nil {
 			logs.Logger.Err(err)
-			panic(err)
+			// panic(err)
 		}
 		logs.Logger.Info().Msgf("%v", p)
-		c.HandlePacket(p)
+		// c.HandlePacket(p)
 		// os.Exit(1)
 		// logs.Logger.Info().Msgf("%b", b)
 	}
