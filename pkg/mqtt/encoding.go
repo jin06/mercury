@@ -45,17 +45,17 @@ func decodeVariableByteInteger(data []byte) (int, int, error) {
 	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
 	var length int = 0     // The length being built
 	var byteValue byte     // Single byte to read
-	var idx int = 0        // Index to read from the byte slice
+	// var idx int = 0        // Index to read from the byte slice
 	var n int = 0
 
 	for {
-		if idx >= len(data) {
+		if n >= len(data) {
 			return 0, n, ErrBytesShorter
 		}
 
 		// Read one byte from the slice
-		byteValue = data[idx]
-		idx++
+		byteValue = data[n]
+		// idx++
 		n++
 
 		// Add the 7 bits to the length value
@@ -143,6 +143,14 @@ func decodeUTF8(data []byte) (res []byte, n int, err error) {
 func decodeUTF8Str(data []byte) (string, int, error) {
 	r, n, err := decodeUTF8(data)
 	return string(r), n, err
+}
+
+func decodeUTF8Ptr(data []byte) (*string, int, error) {
+	s, n, err := decodeUTF8Str(data)
+	if err != nil {
+		return nil, n, err
+	}
+	return &s, n, err
 }
 
 func decodeProtocolVersion(b byte) (ProtocolVersion, error) {

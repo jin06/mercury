@@ -6,47 +6,67 @@ import (
 )
 
 const (
-	IDPayloadFormat              byte = 0x01
-	IDMessageExpiry              byte = 0x02
-	IDContentType                byte = 0x03
-	IDResponseTopic              byte = 0x08
-	IDCorrelationData            byte = 0x09
-	IDSubscriptionIdentifier     byte = 0x0B
-	IDSessionExpiryInterval      byte = 0x11
-	IDAssignedClientID           byte = 0x12
-	IDServerKeepAlive            byte = 0x13
-	IDAuthMethod                 byte = 0x15
-	IDAuthData                   byte = 0x16
-	IDRequestProblemInfo         byte = 0x17
-	IDWillDelayInterval          byte = 0x18
-	IDRequestResponseInformation byte = 0x19
-	IDResponseInfo               byte = 0x1A
-	IDServerReference            byte = 0x1C
-	IDReasonString               byte = 0x1F
-	IDReceiveMaximum             byte = 0x21
-	IDTopicAliasMaximum          byte = 0x22
-	IDTopicAlias                 byte = 0x23
-	IDMaximumQoS                 byte = 0x24
-	IDRetainAvailable            byte = 0x25
-	IDUserProperties             byte = 0x26
-	IDMaximumPacketSize          byte = 0x27
-	IDWildcardSubAvailable       byte = 0x28
-	IDSubIDAvailable             byte = 0x29
-	IDSharedSubAvailable         byte = 0x2A
+	ID_PayloadFormat                   byte = 0x01
+	ID_MessageExpiryInterval           byte = 0x02
+	ID_ContentType                     byte = 0x03
+	ID_ResponseTopic                   byte = 0x08
+	ID_CorrelationData                 byte = 0x09
+	ID_SubscriptionIdentifier          byte = 0x0B
+	ID_SessionExpiryInterval           byte = 0x11
+	ID_AssignedClientID                byte = 0x12
+	ID_ServerKeepAlive                 byte = 0x13
+	ID_AuthenticationMethod            byte = 0x15
+	ID_AuthenticationData              byte = 0x16
+	ID_RequestProblemInfo              byte = 0x17
+	ID_WillDelayInterval               byte = 0x18
+	ID_RequestResponseInformation      byte = 0x19
+	ID_ResponseInformation             byte = 0x1A
+	ID_ServerReference                 byte = 0x1C
+	ID_ReasonString                    byte = 0x1F
+	ID_ReceiveMaximum                  byte = 0x21
+	ID_TopicAliasMaximum               byte = 0x22
+	ID_TopicAlias                      byte = 0x23
+	ID_MaximumQoS                      byte = 0x24
+	ID_RetainAvailable                 byte = 0x25
+	ID_UserProperties                  byte = 0x26
+	ID_MaximumPacketSize               byte = 0x27
+	ID_WildcardSubscriptionAvailable   byte = 0x28
+	ID_SubscriptionIdentifierAvailable byte = 0x29
+	ID_SharedSubscriptionAvailable     byte = 0x2A
 )
 
 // mqtt5
 type Properties struct {
-	RequestProblemInformation  *byte
-	RequestResponseInformation *byte
+	PayloadFormat          *byte
+	MessageExpiryInterval  *uint32
+	ContentType            *string
+	ResponseTopic          *string
+	CorrelationData        []byte
+	SubscriptionIdentifier []byte
 	// SessionExpiryInterval second
-	SessionExpiryInterval *uint32
+	SessionExpiryInterval      *uint32
+	AssignedClientID           *string
+	ServerKeepAlive            *uint16
+	AuthenticationMethod       *string
+	AuthenticationData         *string
+	RequestProblemInformation  *byte
+	WillDelayInterval          *uint32
+	RequestResponseInformation *byte
+	ResponseInformation        *string
+	ServerReference            *string
+	ReasonString               *string
 	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
-	ReceiveMaximum *uint16
-	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
-	MaximumPacketSize *uint32
-	TopicAliasMax     *uint16
+	ReceiveMaximum    *uint16
+	TopicAliasMaximum *uint16
+	TopicAlias        *uint16
+	MaximumQoS        *byte
+	RetainAvailable   *byte
 	UserProperties    *UserProperties
+	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
+	MaximumPacketSize               *uint32
+	WildcardSubscriptionAvailable   *byte
+	SubscriptionIdentifierAvailable *byte
+	SharedSubscriptionAvailable     *byte
 }
 
 func (p *Properties) Len() uint64 {
@@ -58,12 +78,12 @@ func (p *Properties) Encode() ([]byte, error) {
 	result := []byte{0}
 
 	if p.SessionExpiryInterval != nil {
-		result = append(result, IDSessionExpiryInterval)
+		result = append(result, ID_SessionExpiryInterval)
 		result = append(result, uint32ToBytes(*p.SessionExpiryInterval)...)
 	}
 
 	if p.RequestResponseInformation != nil {
-		result = append(result, IDRequestResponseInformation, *p.RequestResponseInformation)
+		result = append(result, ID_RequestResponseInformation, *p.RequestResponseInformation)
 	}
 	if p.RequestProblemInformation != nil {
 		result = append(result, 0x17)
@@ -77,13 +97,14 @@ func (p *Properties) Encode() ([]byte, error) {
 		result = append(result, 0x27)
 		result = append(result, uint32ToBytes(*p.MaximumPacketSize)...)
 	}
-	if p.TopicAliasMax != nil {
+	if p.TopicAliasMaximum != nil {
 		result = append(result, 0x22)
-		result = append(result, uint16ToBytes(*p.TopicAliasMax)...)
+		result = append(result, uint16ToBytes(*p.TopicAliasMaximum)...)
 	}
+	// todo userPropertis decode and encode
 	if p.UserProperties != nil {
 		for key, val := range *p.UserProperties {
-			result = append(result, IDUserProperties)
+			result = append(result, ID_UserProperties)
 			if buf, err := strToBytes(key); err != nil {
 				return nil, err
 			} else {
@@ -113,15 +134,54 @@ func (p *Properties) Decode(data []byte) (int, error) {
 		identifier := data[i]
 		i++
 		switch identifier {
-		case IDSessionExpiryInterval:
-			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
-				return 0, err
+		case ID_PayloadFormat:
+			p.PayloadFormat = new(byte)
+			*p.PayloadFormat = data[i]
+			i++
+		case ID_MessageExpiryInterval:
+			if p.MessageExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return i + total, err
 			}
 			i = i + 4
-		case IDRequestResponseInformation:
-			p.RequestProblemInformation = new(byte)
-			*p.RequestProblemInformation = data[i]
-			i++
+		case ID_SessionExpiryInterval:
+			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return i + total, err
+			}
+			i = i + 4
+		case ID_ContentType:
+			if p.ContentType, n, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			} else {
+				i = i + n
+			}
+		case ID_ResponseTopic:
+			if p.ResponseTopic, n, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			} else {
+				i = i + n
+			}
+		case ID_CorrelationData:
+			if p.CorrelationData, n, err = decodeBinaryData(data[i:]); err != nil {
+				return i + total, err
+			} else {
+				i = i + n
+			}
+		case ID_ReceiveMaximum:
+			if p.ReceiveMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
+				return i + total, err
+			}
+			i = i + 2
+		case ID_MaximumPacketSize:
+			if p.MaximumPacketSize, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return i + total, err
+			}
+			i = i + 4
+		case ID_TopicAliasMaximum:
+			if p.TopicAliasMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
+				return i + total, err
+			}
+			i = i + 2
+		case ID_RequestResponseInformation:
 		default:
 			return 0, ErrProtocolViolation
 		}
@@ -191,7 +251,7 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x22:
 			{
 				i += 2
-				if result.TopicAliasMax, err = readUint16Ptr(reader); err != nil {
+				if result.TopicAliasMaximum, err = readUint16Ptr(reader); err != nil {
 					return
 				}
 			}

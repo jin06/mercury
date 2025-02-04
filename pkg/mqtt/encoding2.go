@@ -55,6 +55,18 @@ func decodeUint32Ptr(data []byte) (*uint32, error) {
 	return &res, nil
 }
 
+func decodeUint16(data []byte) (uint16, error) {
+	return utils.ToUint16(data)
+}
+
+func decodeUint16Ptr(data []byte) (*uint16, error) {
+	res, err := decodeUint16(data)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func readUint16(reader io.Reader) (uint16, error) {
 	res, err := read(reader, 2)
 	if err != nil {
@@ -250,11 +262,22 @@ func decodeKeepAlive(l []byte) uint16 {
 	return res
 }
 
-func decodeLength(b []byte) (l uint16, err error) {
-	return utils.ToUint16(b)
+func encodeLength(l int) ([]byte, error) {
+	res := make([]byte, 2)
+	res[0] = byte(l >> 8)
+	res[1] = byte(l)
+	return res, nil
 }
 
-func readLength(reader io.Reader) (l uint16, err error) {
+func decodeLength(b []byte) (int, error) {
+	l, err := utils.ToUint16(b)
+	if err != nil {
+		return 0, err
+	}
+	return int(l), nil
+}
+
+func readLength(reader io.Reader) (l int, err error) {
 	b := make([]byte, 2)
 	if _, err = reader.Read(b); err != nil {
 		return
@@ -277,7 +300,7 @@ func readProtocolName(reader io.Reader) (res []byte, err error) {
 // }
 
 func readUTF8(reader io.Reader) (res []byte, err error) {
-	var l uint16
+	var l int
 	if l, err = readLength(reader); err != nil {
 		return
 	}
