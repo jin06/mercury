@@ -1,9 +1,5 @@
 package mqtt
 
-import (
-	"io"
-)
-
 type Connack struct {
 	Version   ProtocolVersion
 	FixHeader *FixedHeader
@@ -73,7 +69,7 @@ func (c *Connack) DecodeBody(data []byte) (n int, err error) {
 	return
 }
 
-func (c *Connack) Read(reader io.Reader) (err error) {
+func (c *Connack) Read(reader *Reader) (err error) {
 	var msgLen byte
 	if msgLen, err = readByte(reader); err != nil {
 		return
@@ -99,11 +95,11 @@ func (c *Connack) Read(reader io.Reader) (err error) {
 	return
 }
 
-func (c *Connack) ReadBody(r io.Reader) (err error) {
+func (c *Connack) ReadBody(r *Reader) (err error) {
 	return
 }
 
-func (c *Connack) Write(w io.Writer) error {
+func (c *Connack) Write(w *Writer) error {
 	_, err := w.Write([]byte{boolTobyte(c.SessionPresent)})
 	if err != nil {
 		return err
@@ -118,6 +114,6 @@ func (c *Connack) Write(w io.Writer) error {
 	return nil
 }
 
-func (c *Connack) WriteBody(w io.Writer) error {
+func (c *Connack) WriteBody(w *Writer) error {
 	return nil
 }

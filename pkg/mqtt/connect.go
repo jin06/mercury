@@ -1,9 +1,5 @@
 package mqtt
 
-import (
-	"io"
-)
-
 func NewConnect(header *FixedHeader) *Connect {
 	return &Connect{FixHeader: header}
 }
@@ -191,74 +187,34 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 	return start, nil
 }
 
-func (c *Connect) Read(reader io.Reader) (err error) {
-	// buf := make([]byte, 16)
-	if _, err := readProtocolName(reader); err != nil {
+func (c *Connect) Read(r *Reader) (err error) {
+	c.FixHeader = new(FixedHeader)
+	if err := c.FixHeader.Read(r); err != nil {
 		return err
 	}
-	buf := make([]byte, 4)
-	if _, err = io.ReadFull(reader, buf); err != nil {
-		return
-	}
-
-	c.Version = ProtocolVersion(buf[0])
-	// var usernameFlag, passFlag, willRetain, willQoS, willFlag, cleanStart, reserved bool
-	usernameFlag := buf[1]&0b10000000 == 0b10000000
-	passFlag := buf[1]&0b01000000 == 0b01000000
-	if buf[1]&0b00000100 == 0b00000100 {
-		c.Will = &Will{Properties: new(Properties)}
-		c.Will.Retain = (buf[1]&0b00100000 == 0b00100000)
-		c.Will.QoS = QoS(buf[1] & 0b00011000)
-	}
-	c.Clean = buf[1]&0b00000010 == 0b00000010
-	// reserved := buf[8] & 0b00000001
-	// measured in seconds
-	c.KeepAlive = decodeKeepAlive(buf[2:])
-	if c.Version == MQTT5 {
-		properties, err := readProperties(reader)
-		if err != nil {
-			return err
-		}
-		c.Properties = properties
-	}
-	if c.ClientID, err = readStr(reader); err != nil {
-		return
-	}
-	if c.Will != nil {
-		if c.Version == MQTT5 {
-			// if c.Will.Properties, err = decodeWillProperties(reader); err != nil {
-			// return
-			// }
-		}
-		if c.Will.Topic, err = readStr(reader); err != nil {
-			return
-		}
-		if c.Will.Message, err = readStr(reader); err != nil {
-			return
-		}
-	}
-	if usernameFlag {
-		if c.Username, err = readStr(reader); err != nil {
-			return
-		}
-	}
-	if passFlag {
-		if c.Password, err = readStr(reader); err != nil {
-			return
-		}
-	}
-
-	return
+	return c.ReadBody(r)
 }
 
-func (c *Connect) ReadBody(r io.Reader) error {
-	return nil
-}
-func (c *Connect) Write(reader io.Writer) error {
+func (c *Connect) ReadBody(r *Reader) error {
+	data := make([]byte, c.FixHeader.RemainingLength)
+	if n, err := r.Read(data); err != nil {
+		return err
+	} else {
+		if n != c.FixHeader.RemainingLength {
+			return ErrBytesShorter
+		}
+	}
+	if _, err := c.Decode(data); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c *Connect) WriteBody(w io.Writer) error {
+func (c *Connect) Write(reader *Writer) error {
+	return nil
+}
+
+func (c *Connect) WriteBody(w *Writer) error {
 	return nil
 }
 

@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 )
 
@@ -31,9 +32,11 @@ func ReadPacket(reader *Reader) (packet Packet, err error) {
 	switch header.PacketType {
 	case CONNECT:
 		packet = NewConnect(header)
-		if err := packet.Read(reader); err != nil {
+		if err := packet.ReadBody(reader); err != nil {
 			return nil, err
 		}
+	default:
+		fmt.Println(header)
 	}
 	return
 }

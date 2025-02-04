@@ -10,4 +10,5 @@ var (
 	ErrBytesShorter      = errors.New("the length of []byte is shorter than expected")
 	ErrUTFLengthShoter   = errors.New("the length of []byte is shorter for UTF string")
 	ErrPacketEncoding    = errors.New("packet encoding error")
+	ErrProtocolViolation = errors.New("protocol violation")
 )

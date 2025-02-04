@@ -1,9 +1,5 @@
 package mqtt
 
-import (
-	"io"
-)
-
 const (
 	QoS0 QoS = iota
 	QoS1
@@ -27,13 +23,13 @@ type Packet interface {
 	// Decode body only
 	DecodeBody([]byte) (int, error)
 	// Read all with header
-	Read(io.Reader) error
+	Read(*Reader) error
 	// Only body
-	ReadBody(io.Reader) error
+	ReadBody(*Reader) error
 	// Write all to writer with header
-	Write(io.Writer) error
+	Write(*Writer) error
 	// Only body
-	WriteBody(io.Writer) error
+	WriteBody(*Writer) error
 }
 
 // FixedHeader

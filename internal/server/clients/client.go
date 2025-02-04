@@ -20,14 +20,16 @@ type Client struct {
 	ID     string
 	Conn   net.Conn
 	server Server
+	reader *mqtt.Reader
+	writer *mqtt.Writer
 }
 
 func (c *Client) Run(ctx context.Context) (err error) {
 	c.server.On(c)
-	reader := mqtt.NewReader(c.Conn)
+	c.reader = mqtt.NewReader(c.Conn)
 	for {
 		// b := make([]byte, 1000)
-		p, err := mqtt.ReadPacket(reader)
+		p, err := mqtt.ReadPacket(c.reader)
 		if err != nil {
 			logs.Logger.Err(err)
 			panic(err)
@@ -53,7 +55,7 @@ func (c *Client) HandlePacket(p mqtt.Packet) {
 			}
 		}
 	}
-	response.Write(c.Conn)
+	response.Write(c.writer)
 }
 
 func (c *Client) Connect() {
