@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
+	"github.com/jin06/mercury/pkg/utils"
 )
 
 func encodeVariableByteInteger(length int) ([]byte, error) {
@@ -125,6 +127,47 @@ func bytesToUint64(l []byte) (ret uint64, err error) {
 	return
 }
 
+func encodeLength(l int) ([]byte, error) {
+	res := make([]byte, 2)
+	res[0] = byte(l >> 8)
+	res[1] = byte(l)
+	return res, nil
+}
+
+func decodeLength(b []byte) (int, error) {
+	l, err := utils.ToUint16(b)
+	if err != nil {
+		return 0, err
+	}
+	return int(l), nil
+}
+
+func encodeUTF8(data []byte) ([]byte, error) {
+	// Calculate the length of the data to encode
+	l := len(data)
+
+	// Ensure the length fits within the 2-byte limit
+	if l > (1<<16)-1 { // Max length that can be encoded in 2 bytes
+		return nil, ErrUTFLengthTooLong
+	}
+
+	// Create a new byte slice to hold the length and the data
+	result := make([]byte, 2+l)
+
+	// Encode the length into the first two bytes
+	length, err := encodeLength(l)
+	if err != nil {
+		return nil, err
+	}
+	copy(result[0:2], length)
+
+	// Copy the data into the result slice after the length
+	copy(result[2:], data)
+
+	// Return the encoded byte slice without the length
+	return result, nil
+}
+
 func decodeUTF8(data []byte) (res []byte, n int, err error) {
 	if len(data) < 2 {
 		return nil, 0, ErrBytesShorter
@@ -138,6 +181,10 @@ func decodeUTF8(data []byte) (res []byte, n int, err error) {
 		return nil, 0, ErrUTFLengthShoter
 	}
 	return data[2:total], total, nil
+}
+
+func encodeUTF8Str(s string) ([]byte, error) {
+	return encodeUTF8([]byte(s))
 }
 
 func decodeUTF8Str(data []byte) (string, int, error) {
@@ -163,4 +210,58 @@ func decodeProtocolVersion(b byte) (ProtocolVersion, error) {
 		return MQTT5, nil
 	}
 	return 0, ErrUnsupportVersion
+}
+
+func encodeBool(source bool) byte {
+	if source {
+		return 1
+	}
+	return 0
+}
+
+func encodeUint16(source uint16) []byte {
+	return []byte{
+		byte(source >> 8),
+		byte(source),
+	}
+}
+
+func decodeUint16(data []byte) (uint16, error) {
+	return utils.ToUint16(data)
+}
+
+func decodeUint16Ptr(data []byte) (*uint16, error) {
+	res, err := decodeUint16(data)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func encodeUint32(source uint32) []byte {
+	return []byte{
+		byte(source >> 24),
+		byte(source >> 16),
+		byte(source >> 8),
+		byte(source),
+	}
+}
+
+func decodeUint32(data []byte) (uint32, error) {
+	return utils.ToUint32(data)
+}
+
+func decodeUint32Ptr(data []byte) (*uint32, error) {
+	res, err := decodeUint32(data)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func encodePacketID(id PacketID) []byte {
+	return []byte{
+		byte(id >> 8),
+		byte(id),
+	}
 }

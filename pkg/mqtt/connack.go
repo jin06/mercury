@@ -100,7 +100,7 @@ func (c *Connack) ReadBody(r *Reader) (err error) {
 }
 
 func (c *Connack) Write(w *Writer) error {
-	_, err := w.Write([]byte{boolTobyte(c.SessionPresent)})
+	_, err := w.Write([]byte{encodeBool(c.SessionPresent)})
 	if err != nil {
 		return err
 	}

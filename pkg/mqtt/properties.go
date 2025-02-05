@@ -79,7 +79,7 @@ func (p *Properties) Encode() ([]byte, error) {
 
 	if p.SessionExpiryInterval != nil {
 		result = append(result, ID_SessionExpiryInterval)
-		result = append(result, uint32ToBytes(*p.SessionExpiryInterval)...)
+		result = append(result, encodeUint32(*p.SessionExpiryInterval)...)
 	}
 
 	if p.RequestResponseInformation != nil {
@@ -91,26 +91,26 @@ func (p *Properties) Encode() ([]byte, error) {
 	}
 	if p.ReceiveMaximum != nil {
 		result = append(result, 0x21)
-		result = append(result, uint16ToBytes(*p.ReceiveMaximum)...)
+		result = append(result, encodeUint16(*p.ReceiveMaximum)...)
 	}
 	if p.MaximumPacketSize != nil {
 		result = append(result, 0x27)
-		result = append(result, uint32ToBytes(*p.MaximumPacketSize)...)
+		result = append(result, encodeUint32(*p.MaximumPacketSize)...)
 	}
 	if p.TopicAliasMaximum != nil {
 		result = append(result, 0x22)
-		result = append(result, uint16ToBytes(*p.TopicAliasMaximum)...)
+		result = append(result, encodeUint16(*p.TopicAliasMaximum)...)
 	}
 	// todo userPropertis decode and encode
 	if p.UserProperties != nil {
 		for key, val := range *p.UserProperties {
 			result = append(result, ID_UserProperties)
-			if buf, err := strToBytes(key); err != nil {
+			if buf, err := encodeUTF8Str(key); err != nil {
 				return nil, err
 			} else {
 				result = append(result, buf...)
 			}
-			if buf, err := strToBytes(val); err != nil {
+			if buf, err := encodeUTF8Str(val); err != nil {
 				return nil, err
 			} else {
 				result = append(result, buf...)
@@ -297,12 +297,12 @@ type UserProperties map[string]string
 func (u *UserProperties) toBytes() (result []byte, err error) {
 	result = []byte{}
 	for key, val := range *u {
-		if bytes, err := strToBytes(key); err != nil {
+		if bytes, err := encodeUTF8Str(key); err != nil {
 			return result, err
 		} else {
 			result = append(result, bytes...)
 		}
-		if bytes, err := strToBytes(val); err != nil {
+		if bytes, err := encodeUTF8Str(val); err != nil {
 			return result, err
 		} else {
 			result = append(result, bytes...)

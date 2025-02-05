@@ -17,7 +17,7 @@ func (p *Puback) Encode() ([]byte, error) {
 		result = append(result, p.PacketID.ToBytes()...)
 		result = append(result, byte(p.ReasonCode), 0)
 		var length byte = 0
-		if reasonString, err := strToBytes(p.ReasonString); err != nil {
+		if reasonString, err := encodeUTF8Str(p.ReasonString); err != nil {
 			return []byte{}, nil
 		} else {
 			length += byte(len(reasonString))

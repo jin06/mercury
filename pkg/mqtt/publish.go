@@ -26,13 +26,13 @@ func (p *Publish) Encode() ([]byte, error) {
 	}
 	result[0] |= (byte(p.Qos) << 1)
 	// write topic name
-	if bytes, err := strToBytes(p.Topic); err != nil {
+	if bytes, err := encodeUTF8Str(p.Topic); err != nil {
 		return nil, err
 	} else {
 		result = append(result, bytes...)
 	}
 	// write message ID
-	result = append(result, packetIDToBytes(p.PacketID)...)
+	result = append(result, encodePacketID(p.PacketID)...)
 
 	if p.Version == MQTT5 {
 		if p.Properties != nil {

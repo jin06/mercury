@@ -26,20 +26,20 @@ func (c *Connect) Encode() (result []byte, err error) {
 	result = toHeader(CONNECT)
 	//Variable header
 	var buf []byte
-	if buf, err = strToBytes(c.protocolName()); err != nil {
+	if buf, err = encodeUTF8Str(c.protocolName()); err != nil {
 		return
 	}
 	result = append(result, buf...)
 	result = append(result, byte(c.Version))
 	result = append(result, c.encodeFlag())
-	result = append(result, uint16ToBytes(c.KeepAlive)...)
+	result = append(result, encodeUint16(c.KeepAlive)...)
 	if buf, err = c.Properties.Encode(); err != nil {
 		result = append(result, buf...)
 	}
 	if c.ClientID == "" {
 		return nil, ErrNullClientID
 	}
-	if buf, err = strToBytes(c.ClientID); err != nil {
+	if buf, err = encodeUTF8Str(c.ClientID); err != nil {
 		return
 	}
 	result = append(result, buf...)
@@ -50,20 +50,20 @@ func (c *Connect) Encode() (result []byte, err error) {
 			// }
 			result = append(result, buf...)
 		}
-		if buf, err = strToBytes(c.Will.Topic); err != nil {
+		if buf, err = encodeUTF8Str(c.Will.Topic); err != nil {
 			return
 		}
 		result = append(result, buf...)
-		if buf, err = strToBytes(c.Will.Message); err != nil {
+		if buf, err = encodeUTF8Str(c.Will.Message); err != nil {
 			return
 		}
 		result = append(result, buf...)
 	}
-	if buf, err = strToBytes(c.Username); err != nil {
+	if buf, err = encodeUTF8Str(c.Username); err != nil {
 		return
 	}
 	result = append(result, buf...)
-	if buf, err = strToBytes(c.Password); err != nil {
+	if buf, err = encodeUTF8Str(c.Password); err != nil {
 		return
 	}
 	result = append(result, buf...)

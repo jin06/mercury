@@ -11,4 +11,5 @@ var (
 	ErrUTFLengthShoter   = errors.New("the length of []byte is shorter for UTF string")
 	ErrPacketEncoding    = errors.New("packet encoding error")
 	ErrProtocolViolation = errors.New("protocol violation")
+	ErrUTFLengthTooLong  = errors.New("max length that can be encoded in 2 bytes")
 )
