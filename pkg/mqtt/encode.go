@@ -142,6 +142,11 @@ func decodeLength(b []byte) (int, error) {
 	return int(l), nil
 }
 
+func decodeKeepAlive(l []byte) uint16 {
+	res, _ := utils.ToUint16(l)
+	return res
+}
+
 func encodeUTF8(data []byte) ([]byte, error) {
 	// Calculate the length of the data to encode
 	l := len(data)
