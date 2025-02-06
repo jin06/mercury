@@ -17,7 +17,7 @@ const (
 	ID_ServerKeepAlive                 byte = 0x13
 	ID_AuthenticationMethod            byte = 0x15
 	ID_AuthenticationData              byte = 0x16
-	ID_RequestProblemInfo              byte = 0x17
+	ID_RequestProblemInfomation        byte = 0x17
 	ID_WillDelayInterval               byte = 0x18
 	ID_RequestResponseInformation      byte = 0x19
 	ID_ResponseInformation             byte = 0x1A
@@ -35,38 +35,121 @@ const (
 	ID_SharedSubscriptionAvailable     byte = 0x2A
 )
 
-// mqtt5
+// Properties represents the various properties in an MQTT packet.
+// These are used for controlling the behavior of an MQTT connection,
+// message, or subscription and include options like message expiry,
+// authentication, and session details.
 type Properties struct {
-	PayloadFormat          *byte
-	MessageExpiryInterval  *uint32
-	ContentType            *string
-	ResponseTopic          *string
-	CorrelationData        []byte
-	SubscriptionIdentifier []byte
-	// SessionExpiryInterval second
-	SessionExpiryInterval      *uint32
-	AssignedClientID           *string
-	ServerKeepAlive            *uint16
-	AuthenticationMethod       *string
-	AuthenticationData         *string
-	RequestProblemInformation  *byte
-	WillDelayInterval          *uint32
+	// PayloadFormat specifies the format of the payload.
+	// If this is not provided, the default format is assumed.
+	// A value of 0 indicates "UTF-8", and 1 indicates "binary".
+	PayloadFormat *byte
+
+	// MessageExpiryInterval specifies the expiry interval of the message.
+	// This is the maximum time (in seconds) that the message is valid for.
+	// After this interval, the message is discarded by the broker.
+	MessageExpiryInterval *uint32
+
+	// ContentType is used to specify the content type of the payload.
+	// This helps identify the type of data in the payload (e.g., JSON, XML, etc.).
+	ContentType *string
+
+	// ResponseTopic is the topic to which the response should be sent.
+	// This can be used in request-response messaging patterns.
+	ResponseTopic *string
+
+	// CorrelationData is used to correlate a response message with a request.
+	// It is typically included in the response to match a previously sent request.
+	CorrelationData []byte
+
+	// SubscriptionIdentifier is an identifier for the subscription.
+	// It can be used to relate a subscription to a specific client or purpose.
+	SubscriptionIdentifier *int
+
+	// SessionExpiryInterval specifies the session expiry time in seconds.
+	// This defines how long the broker should keep the session alive after the client disconnects.
+	// A value of 0 indicates that the session is valid indefinitely.
+	SessionExpiryInterval *uint32
+
+	// AssignedClientID is the ID assigned to a client when it connects.
+	// This is the unique identifier used by the broker to identify a client.
+	AssignedClientID *string
+
+	// ServerKeepAlive is the maximum time interval between two consecutive MQTT messages
+	// (e.g., PINGREQ and PINGRESP). If no messages are sent in this time, the server will disconnect the client.
+	ServerKeepAlive *uint16
+
+	// AuthenticationMethod is used to specify the authentication method
+	// to be used by the client for connection. This is an optional field.
+	AuthenticationMethod *string
+
+	// AuthenticationData contains the data required for the client’s authentication method.
+	// This can be a password, certificate, etc., depending on the authentication method.
+	AuthenticationData []byte
+
+	// RequestProblemInformation specifies whether the client wants the broker to include problem information in responses.
+	// This can be used to indicate issues with message processing.
+	RequestProblemInformation *bool
+
+	// WillDelayInterval specifies the delay in seconds before the last will message is sent after disconnection.
+	// This can be used to delay the sending of the will message to allow for certain conditions to be met.
+	WillDelayInterval *uint32
+
+	// RequestResponseInformation indicates whether the client wants the broker to provide response information
+	// (i.e., if the message expects a response).
 	RequestResponseInformation *bool
-	ResponseInformation        *string
-	ServerReference            *string
-	ReasonString               *string
-	//ReceiveMaximum The Client uses this value to limit the number of QoS 1 and QoS 2 publications that it is willing to process concurrently.
-	ReceiveMaximum    *uint16
+
+	// ResponseInformation is the information provided by the broker in response to a message,
+	// typically used in request-response scenarios.
+	ResponseInformation *string
+
+	// ServerReference provides a reference to the server that can be used in the response.
+	// This is often used for identifying which server the message was processed by.
+	ServerReference *string
+
+	// ReasonString is a human-readable string that provides additional information
+	// about the reason for a particular message or state.
+	ReasonString *string
+
+	// ReceiveMaximum indicates the maximum number of QoS 1 and QoS 2 publications
+	// the client is willing to process concurrently.
+	ReceiveMaximum *uint16
+
+	// TopicAliasMaximum specifies the maximum number of topic aliases the client is willing to accept.
+	// Topic aliases are used to reduce the size of the topic in messages.
 	TopicAliasMaximum *uint16
-	TopicAlias        *uint16
-	MaximumQoS        *QoS
-	RetainAvailable   *bool
-	UserProperties    *UserProperties
-	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
-	MaximumPacketSize               *uint32
-	WildcardSubscriptionAvailable   *bool
+
+	// TopicAlias is a topic alias used to reduce the size of the topic in messages.
+	// It is an identifier for a specific topic.
+	TopicAlias *uint16
+
+	// MaximumQoS specifies the maximum QoS level supported by the client for message delivery.
+	// This can be 0 (At most once), 1 (At least once), or 2 (Exactly once).
+	MaximumQoS *QoS
+
+	// RetainAvailable indicates whether the retain flag is supported by the server.
+	// If true, the client can request retained messages for topics.
+	RetainAvailable *bool
+
+	// UserProperties allow the client and broker to exchange arbitrary key-value pairs.
+	// This can be used for custom metadata, such as application-specific properties.
+	UserProperties *UserProperties
+
+	// MaximumPacketSize specifies the maximum size of an MQTT control packet in bytes.
+	// This is used to ensure the control packets do not exceed the specified size limit.
+	MaximumPacketSize *uint32
+
+	// WildcardSubscriptionAvailable indicates whether the broker supports wildcard subscriptions.
+	// If true, the client can subscribe to topics using wildcard characters like '#' or '+'.
+	WildcardSubscriptionAvailable *bool
+
+	// SubscriptionIdentifierAvailable indicates whether the broker supports subscription identifiers.
+	// These identifiers are used to track and manage subscriptions.
 	SubscriptionIdentifierAvailable *bool
-	SharedSubscriptionAvailable     *bool
+
+	// SharedSubscriptionAvailable indicates whether the broker supports shared subscriptions.
+	// Shared subscriptions allow multiple clients to share a single subscription to a topic.
+	SharedSubscriptionAvailable *bool
 }
 
 func (p *Properties) Len() uint64 {
@@ -144,11 +227,6 @@ func (p *Properties) Decode(data []byte) (int, error) {
 				return i + total, err
 			}
 			i = i + 4
-		case ID_SessionExpiryInterval:
-			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
-				return i + total, err
-			}
-			i = i + 4
 		case ID_ContentType:
 			if p.ContentType, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
@@ -164,7 +242,46 @@ func (p *Properties) Decode(data []byte) (int, error) {
 				return i + total, err
 			}
 			i = i + vl
-
+		case ID_SubscriptionIdentifier:
+			if p.SubscriptionIdentifier, vl, err = decodeVariableByteIntegerPtr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i = i + vl
+		case ID_SessionExpiryInterval:
+			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return i + total, err
+			}
+			i = i + 4
+		case ID_AssignedClientID:
+			if p.AssignedClientID, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += vl
+		case ID_ServerKeepAlive:
+			if p.ServerKeepAlive, err = decodeUint16Ptr(data[i : i+2]); err != nil {
+				return i + total, err
+			}
+			i += 2
+		case ID_AuthenticationMethod:
+			if p.AuthenticationMethod, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += vl
+		case ID_AuthenticationData:
+			if p.AuthenticationData, vl, err = decodeBinaryData(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += vl
+		case ID_RequestProblemInfomation:
+			if p.RequestProblemInformation, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i += vl
+		case ID_WillDelayInterval:
+			if p.WillDelayInterval, err = decodeUint32Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += 4
 		case ID_RequestResponseInformation:
 			if p.RequestResponseInformation, err = decodeBoolPtr(data[i]); err != nil {
 				return i + total, err

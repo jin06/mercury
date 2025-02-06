@@ -79,6 +79,14 @@ func decodeVariableByteInteger(data []byte) (int, int, error) {
 	return length, n, nil
 }
 
+func decodeVariableByteIntegerPtr(data []byte) (*int, int, error) {
+	res, n, err := decodeVariableByteInteger(data)
+	if err != nil {
+		return nil, n, err
+	}
+	return &res, n, nil
+}
+
 func readVariableByteInteger(reader *Reader) (int, int, error) {
 	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
 	var length int = 0     // The length being built
