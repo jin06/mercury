@@ -170,7 +170,7 @@ func (p *Properties) Encode() ([]byte, error) {
 	}
 	if p.RequestProblemInformation != nil {
 		result = append(result, 0x17)
-		result = append(result, *p.RequestProblemInformation)
+		result = append(result, encodeBool(*p.RequestProblemInformation))
 	}
 	if p.ReceiveMaximum != nil {
 		result = append(result, 0x21)
@@ -387,10 +387,10 @@ func (p *Properties) Read(r *Reader) error {
 			}
 		case 0x17:
 			{
-				i++
-				if p.RequestProblemInformation, err = r.ReadBytePtr(); err != nil {
+				if p.RequestProblemInformation, err = r.ReadBoolPtr(); err != nil {
 					return err
 				}
+				i++
 			}
 			// receive max
 		case 0x21:
