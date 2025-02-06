@@ -190,18 +190,12 @@ func (c *Connect) Read(r *Reader) (err error) {
 }
 
 func (c *Connect) ReadBody(r *Reader) error {
-	data := make([]byte, c.FixHeader.RemainingLength)
-	if n, err := r.Read(data); err != nil {
-		return err
-	} else {
-		if n != c.FixHeader.RemainingLength {
-			return ErrBytesShorter
-		}
-	}
-	if _, err := c.DecodeBody(data); err != nil {
+	data, err := r.Read(c.FixHeader.RemainingLength)
+	if err != nil {
 		return err
 	}
-	return nil
+	_, err = c.DecodeBody(data)
+	return err
 }
 
 func (c *Connect) Write(reader *Writer) error {

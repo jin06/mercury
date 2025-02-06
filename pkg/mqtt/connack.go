@@ -3,6 +3,7 @@ package mqtt
 type Connack struct {
 	Version   ProtocolVersion
 	FixHeader *FixedHeader
+	// FixHeader *FixedHeader
 
 	ReasonCode     ReasonCode
 	Properties     *Properties
@@ -69,34 +70,43 @@ func (c *Connack) DecodeBody(data []byte) (n int, err error) {
 	return
 }
 
-func (c *Connack) Read(reader *Reader) (err error) {
-	var msgLen byte
-	if msgLen, err = readByte(reader); err != nil {
-		return
-	}
-	length := int(msgLen)
-	if length < 2 {
-		return ErrProtocol
-	}
-	if flags, err := readByte(reader); err != nil {
-		if (flags & 0x00000001) == 0x00000001 {
-			c.SessionPresent = true
-		}
+func (c *Connack) Read(r *Reader) error {
+	c.FixHeader = new(FixedHeader)
+	if err := c.FixHeader.Read(r); err != nil {
 		return err
 	}
-	if code, err := readByte(reader); err != nil {
-		return err
-	} else {
-		c.ReasonCode = ReasonCode(code)
-	}
-	if length > 2 {
-		c.Properties, err = readProperties(reader)
-	}
-	return
+	return c.ReadBody(r)
 }
 
-func (c *Connack) ReadBody(r *Reader) (err error) {
-	return
+func (c *Connack) ReadBody(r *Reader) error {
+	data, err := r.Read(c.FixHeader.RemainingLength)
+	if err != nil {
+		return err
+	}
+	_, err = c.DecodeBody(data)
+	return err
+	// var msgLen byte
+	// if msgLen, err = readByte(reader); err != nil {
+	// 	return
+	// }
+	// length := int(msgLen)
+	// if length < 2 {
+	// 	return ErrProtocol
+	// }
+	// if flags, err := readByte(reader); err != nil {
+	// 	if (flags & 0x00000001) == 0x00000001 {
+	// 		c.SessionPresent = true
+	// 	}
+	// 	return err
+	// }
+	// if code, err := readByte(reader); err != nil {
+	// 	return err
+	// } else {
+	// 	c.ReasonCode = ReasonCode(code)
+	// }
+	// if length > 2 {
+	// 	c.Properties, err = readProperties(reader)
+	// }
 }
 
 func (c *Connack) Write(w *Writer) error {

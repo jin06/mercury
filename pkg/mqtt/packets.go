@@ -81,7 +81,7 @@ func (f *FixedHeader) Read(reader *Reader) error {
 	}
 	f.PacketType = PacketType(b >> 4)
 	f.Flags = 0b00001111 & b
-	l, err := readVariableByteInteger(reader)
+	l, _, err := readVariableByteInteger(reader)
 	if err != nil {
 		return err
 	}

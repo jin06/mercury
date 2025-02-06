@@ -189,19 +189,19 @@ func (p *Properties) Decode(data []byte) (int, error) {
 	return n + total, nil
 }
 
-func readProperties(reader io.Reader) (result *Properties, err error) {
-	result = &Properties{}
+func (p *Properties) Read(r *Reader) error {
+	// result = &Properties{}
 	var total int
-	if res, err := readByte(reader); err != nil {
-		return result, err
-	} else {
-		total = int(res)
+
+	total, _, err := r.ReadVariableByteInteger()
+	if err != nil {
+		return err
 	}
 
 	for i := 0; i < total; {
 		var identifier byte
-		if identifier, err = readByte(reader); err != nil {
-			return
+		if identifier, err = r.ReadByte(); err != nil {
+			return err
 		}
 		i++
 
@@ -209,50 +209,48 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 		case 0x11:
 			{
 				i += 4
-				if result.SessionExpiryInterval, err = readUint32Ptr(reader); err != nil {
-					return
+				if p.SessionExpiryInterval, err = r.ReadUint32Ptr(); err != nil {
+					return err
 				}
 			}
 		case 0x19:
 			{
 				i++
-				result.RequestResponseInformation, err = readBytePtr(reader)
-				if err != nil {
-					return
+				if p.RequestResponseInformation, err = r.ReadBytePtr(); err != nil {
+					return err
 				}
 			}
 		case 0x17:
 			{
 				i++
-				result.RequestProblemInformation, err = readBytePtr(reader)
-				if err != nil {
-					return
+				if p.RequestProblemInformation, err = r.ReadBytePtr(); err != nil {
+					return err
 				}
 			}
 			// receive max
 		case 0x21:
 			{
 				i += 2
-				if result.ReceiveMaximum, err = readUint16Ptr(reader); err != nil {
-					return
+				if p.ReceiveMaximum, err = r.ReadUint16Ptr(); err != nil {
+					return err
 				}
 			}
 			// Max packet size
 		case 0x27:
 			{
 				i += 4
-				if max, err := readUint32Ptr(reader); err != nil {
-					return nil, err
+				if max, err := r.ReadUint32Ptr(); err != nil {
+					return err
 				} else if max == nil {
-					result.MaximumPacketSize = max
+					p.MaximumPacketSize = max
 				}
 			}
 			//  Topic Alias Max
 		case 0x22:
 			{
 				i += 2
-				if result.TopicAliasMaximum, err = readUint16Ptr(reader); err != nil {
-					return
+				if p.TopicAliasMaximum, err = r.ReadUint16Ptr(); err != nil {
+					return err
 				}
 			}
 			// User properties
@@ -263,28 +261,28 @@ func readProperties(reader io.Reader) (result *Properties, err error) {
 				for j := 0; j < total-i; {
 					var val string
 					var n int
-					if val, n, err = readStrN(reader); err != nil {
-						return
+					if val, n, err = r.ReadUTF8Str(); err != nil {
+						return err
 					}
 					ul += n
 					j = j + n
 					list = append(list, val)
 				}
 				if len(list)%2 == 1 {
-					return result, ErrProtocol
+					return ErrProtocol
 				}
 				userProperties := UserProperties{}
 
 				for i := 0; i < len(list); i += 2 {
 					userProperties[list[i]] = userProperties[list[i+1]]
 				}
-				result.UserProperties = &userProperties
+				p.UserProperties = &userProperties
 				i += ul
-				return
+				return nil
 			}
 		}
 	}
-	return
+	return nil
 }
 
 // unimplemented
@@ -311,15 +309,15 @@ func (u *UserProperties) toBytes() (result []byte, err error) {
 	return
 }
 
-func (u *UserProperties) fromReader(reader io.Reader) error {
-	propertyLength, err := readUint8(reader)
+func (u *UserProperties) Read(r *Reader) error {
+	propertyLength, err := r.ReadUint8()
 	if err != nil {
 		return err
 	}
 	// buf, err := readBytes(reader, int(propertyLength))
 	arr := []string{}
 	for i := 0; i <= int(propertyLength); {
-		str, n, err := readStrN(reader)
+		str, n, err := r.ReadUTF8Str()
 		if err != nil {
 			return err
 		}

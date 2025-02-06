@@ -79,16 +79,18 @@ func decodeVariableByteInteger(data []byte) (int, int, error) {
 	return length, n, nil
 }
 
-func readVariableByteInteger(reader *Reader) (int, error) {
+func readVariableByteInteger(reader *Reader) (int, int, error) {
 	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
 	var length int = 0     // The length being built
 	var byteValue byte     // Single byte to read
+	var n int = 0
 
 	for {
+		n++
 		// Read one byte from the reader
 		b, err := reader.ReadByte()
 		if err != nil {
-			return 0, err
+			return 0, 0, err
 		}
 		byteValue = b
 
@@ -104,7 +106,7 @@ func readVariableByteInteger(reader *Reader) (int, error) {
 		multiplier *= 128
 	}
 
-	return length, nil
+	return length, n, nil
 }
 
 func writeVariableByteInteger(writer *Writer, length int) error {
