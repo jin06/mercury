@@ -51,7 +51,7 @@ type Properties struct {
 	AuthenticationData         *string
 	RequestProblemInformation  *byte
 	WillDelayInterval          *uint32
-	RequestResponseInformation *byte
+	RequestResponseInformation *bool
 	ResponseInformation        *string
 	ServerReference            *string
 	ReasonString               *string
@@ -59,14 +59,14 @@ type Properties struct {
 	ReceiveMaximum    *uint16
 	TopicAliasMaximum *uint16
 	TopicAlias        *uint16
-	MaximumQoS        *byte
-	RetainAvailable   *byte
+	MaximumQoS        *QoS
+	RetainAvailable   *bool
 	UserProperties    *UserProperties
 	// MaximumPacketSize The packet size is the total number of bytes in an MQTT Control Packet
 	MaximumPacketSize               *uint32
-	WildcardSubscriptionAvailable   *byte
-	SubscriptionIdentifierAvailable *byte
-	SharedSubscriptionAvailable     *byte
+	WildcardSubscriptionAvailable   *bool
+	SubscriptionIdentifierAvailable *bool
+	SharedSubscriptionAvailable     *bool
 }
 
 func (p *Properties) Len() uint64 {
@@ -83,7 +83,7 @@ func (p *Properties) Encode() ([]byte, error) {
 	}
 
 	if p.RequestResponseInformation != nil {
-		result = append(result, ID_RequestResponseInformation, *p.RequestResponseInformation)
+		result = append(result, ID_RequestResponseInformation, encodeBool(*p.RequestResponseInformation))
 	}
 	if p.RequestProblemInformation != nil {
 		result = append(result, 0x17)
@@ -133,6 +133,7 @@ func (p *Properties) Decode(data []byte) (int, error) {
 	for i := n; i < total; {
 		identifier := data[i]
 		i++
+		var vl int
 		switch identifier {
 		case ID_PayloadFormat:
 			p.PayloadFormat = new(byte)
@@ -149,39 +150,86 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			}
 			i = i + 4
 		case ID_ContentType:
-			if p.ContentType, n, err = decodeUTF8Ptr(data[i:]); err != nil {
+			if p.ContentType, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
-			} else {
-				i = i + n
 			}
+			i = i + vl
 		case ID_ResponseTopic:
-			if p.ResponseTopic, n, err = decodeUTF8Ptr(data[i:]); err != nil {
+			if p.ResponseTopic, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
-			} else {
-				i = i + n
 			}
+			i = i + vl
 		case ID_CorrelationData:
-			if p.CorrelationData, n, err = decodeBinaryData(data[i:]); err != nil {
+			if p.CorrelationData, vl, err = decodeBinaryData(data[i:]); err != nil {
 				return i + total, err
-			} else {
-				i = i + n
 			}
+			i = i + vl
+
+		case ID_RequestResponseInformation:
+			if p.RequestResponseInformation, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i++
+		case ID_ResponseInformation:
+			if p.ResponseInformation, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i = i + vl
+		case ID_ServerReference:
+			if p.ServerReference, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += vl
+		case ID_ReasonString:
+			if p.ReasonString, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
+				return i + total, err
+			}
+			i += vl
 		case ID_ReceiveMaximum:
 			if p.ReceiveMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
 				return i + total, err
 			}
 			i = i + 2
-		case ID_MaximumPacketSize:
-			if p.MaximumPacketSize, err = decodeUint32Ptr(data[i : i+4]); err != nil {
-				return i + total, err
-			}
-			i = i + 4
 		case ID_TopicAliasMaximum:
 			if p.TopicAliasMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
 				return i + total, err
 			}
 			i = i + 2
-		case ID_RequestResponseInformation:
+		case ID_TopicAlias:
+			if p.TopicAlias, err = decodeUint16Ptr(data[i : i+2]); err != nil {
+				return i + total, err
+			}
+			i += 2
+		case ID_MaximumQoS:
+			p.MaximumQoS = decodeBytePrt(data[i])
+			i++
+		case ID_RetainAvailable:
+			if p.RetainAvailable, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i++
+		case ID_UserProperties:
+			panic("not imeplement")
+		case ID_MaximumPacketSize:
+			if p.MaximumPacketSize, err = decodeUint32Ptr(data[i : i+4]); err != nil {
+				return i + total, err
+			}
+			i = i + 4
+		case ID_WildcardSubscriptionAvailable:
+			if p.WildcardSubscriptionAvailable, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i++
+		case ID_SubscriptionIdentifierAvailable:
+			if p.SubscriptionIdentifierAvailable, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i++
+		case ID_SharedSubscriptionAvailable:
+			if p.SharedSubscriptionAvailable, err = decodeBoolPtr(data[i]); err != nil {
+				return i + total, err
+			}
+			i++
 		default:
 			return 0, ErrProtocolViolation
 		}
@@ -216,7 +264,7 @@ func (p *Properties) Read(r *Reader) error {
 		case 0x19:
 			{
 				i++
-				if p.RequestResponseInformation, err = r.ReadBytePtr(); err != nil {
+				if p.RequestResponseInformation, err = r.ReadBoolPtr(); err != nil {
 					return err
 				}
 			}

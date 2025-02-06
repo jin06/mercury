@@ -226,6 +226,24 @@ func encodeBool(source bool) byte {
 	return 0
 }
 
+func decodeBool(b byte) (bool, error) {
+	if b == 0 {
+		return false, nil
+	}
+	if b == 1 {
+		return true, nil
+	}
+	return false, ErrProtocol
+}
+
+func decodeBoolPtr(b byte) (*bool, error) {
+	res, err := decodeBool(b)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func encodeUint16(source uint16) []byte {
 	return []byte{
 		byte(source >> 8),
@@ -271,4 +289,8 @@ func encodePacketID(id PacketID) []byte {
 		byte(id >> 8),
 		byte(id),
 	}
+}
+
+func decodeBytePrt(b byte) *QoS {
+	return (*QoS)(&b)
 }
