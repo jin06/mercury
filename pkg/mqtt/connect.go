@@ -91,41 +91,22 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		return start, err
 	} else {
 		c.ProtocolName = protocol
-		start = start + n
+		start += n
 	}
 
 	if version, err := decodeProtocolVersion(data[start]); err != nil {
 		return start, err
 	} else {
 		c.Version = version
-		start = start + 1
+		start++
 	}
-
 	{
-		flag := data[start]
-		c.UserNameFlag = (flag&0b1000000 == 0b1000000)
-		c.PasswordFlag = (flag&0b01000000 == 0b01000000)
-		if flag&0b00000100 == 0b00000100 {
-			c.Will = &Will{}
-			c.Will.Retain = (flag&0b00100000 == 0b00100000)
-			c.Will.QoS = QoS(flag & 0b00011000)
-		}
-		c.Clean = (flag&0b00000010 == 0b00000010)
-		c.WillFlag = (flag&0b00000100 == 0b00000100)
-		if c.WillFlag {
-			c.Will = &Will{
-				Retain:     flag&0b00100000 == 0b00100000,
-				QoS:        QoS(flag & 0b00011000),
-				Properties: new(Properties),
-			}
-		}
-
-		start = start + 1
+		c.decodeFlag(data[start])
+		start++
 	}
-
 	{
 		c.KeepAlive = decodeKeepAlive(data[start : start+2])
-		start = start + 2
+		start += 2
 	}
 
 	if c.Version.IsMQTT5() {
@@ -134,7 +115,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		if err != nil {
 			return start, err
 		}
-		start = start + n
+		start += n
 	}
 	{
 		clientID, n, err := decodeUTF8Str(data[start:])
@@ -142,7 +123,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 			return start, err
 		}
 		c.ClientID = clientID
-		start = start + n
+		start += n
 	}
 	if c.WillFlag {
 		if c.Version.IsMQTT5() {
@@ -216,6 +197,26 @@ func (c *Connect) protocolName() string {
 		return "MQTT"
 	}
 	return ""
+}
+
+func (c *Connect) decodeFlag(flag byte) {
+	c.UserNameFlag = (flag&0b1000000 == 0b1000000)
+	c.PasswordFlag = (flag&0b01000000 == 0b01000000)
+	if flag&0b00000100 == 0b00000100 {
+		c.Will = &Will{}
+		c.Will.Retain = (flag&0b00100000 == 0b00100000)
+		c.Will.QoS = QoS(flag & 0b00011000)
+	}
+	c.Clean = (flag&0b00000010 == 0b00000010)
+	c.WillFlag = (flag&0b00000100 == 0b00000100)
+	if c.WillFlag {
+		c.Will = &Will{
+			Retain:     flag&0b00100000 == 0b00100000,
+			QoS:        QoS(flag & 0b00011000),
+			Properties: new(Properties),
+		}
+	}
+	return
 }
 
 func (c *Connect) encodeFlag() byte {

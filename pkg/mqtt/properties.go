@@ -1,7 +1,6 @@
 package mqtt
 
 import (
-	"errors"
 	"io"
 )
 
@@ -133,7 +132,7 @@ type Properties struct {
 
 	// UserProperties allow the client and broker to exchange arbitrary key-value pairs.
 	// This can be used for custom metadata, such as application-specific properties.
-	UserProperties *UserProperties
+	UserProperties UserProperties
 
 	// MaximumPacketSize specifies the maximum size of an MQTT control packet in bytes.
 	// This is used to ensure the control packets do not exceed the specified size limit.
@@ -186,14 +185,14 @@ func (p *Properties) Encode() ([]byte, error) {
 	}
 	// todo userPropertis decode and encode
 	if p.UserProperties != nil {
-		for key, val := range *p.UserProperties {
+		for _, pro := range p.UserProperties {
 			result = append(result, ID_UserProperties)
-			if buf, err := encodeUTF8Str(key); err != nil {
+			if buf, err := encodeUTF8Str(pro.Key); err != nil {
 				return nil, err
 			} else {
 				result = append(result, buf...)
 			}
-			if buf, err := encodeUTF8Str(val); err != nil {
+			if buf, err := encodeUTF8Str(pro.Val); err != nil {
 				return nil, err
 			} else {
 				result = append(result, buf...)
@@ -276,7 +275,7 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			if p.RequestProblemInformation, err = decodeBoolPtr(data[i]); err != nil {
 				return i + total, err
 			}
-			i += vl
+			i++
 		case ID_WillDelayInterval:
 			if p.WillDelayInterval, err = decodeUint32Ptr(data[i:]); err != nil {
 				return i + total, err
@@ -326,7 +325,12 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			}
 			i++
 		case ID_UserProperties:
-			panic("not imeplement")
+			if k, v, vl, err := decodeStringPair(data[i:]); err != nil {
+				return i + total, err
+			} else {
+				p.UserProperties = append(p.UserProperties, UserProperty{k, v})
+				i += vl
+			}
 		case ID_MaximumPacketSize:
 			if p.MaximumPacketSize, err = decodeUint32Ptr(data[i : i+4]); err != nil {
 				return i + total, err
@@ -439,9 +443,9 @@ func (p *Properties) Read(r *Reader) error {
 				userProperties := UserProperties{}
 
 				for i := 0; i < len(list); i += 2 {
-					userProperties[list[i]] = userProperties[list[i+1]]
+					userProperties = append(userProperties, UserProperty{list[i], list[i+1]})
 				}
-				p.UserProperties = &userProperties
+				p.UserProperties = userProperties
 				i += ul
 				return nil
 			}
@@ -455,45 +459,36 @@ func writeProperties(writer io.Writer, p *Properties) error {
 	return nil
 }
 
-type UserProperties map[string]string
+type UserProperty struct {
+	Key string
+	Val string
+}
+
+type UserProperties []UserProperty
 
 func (u *UserProperties) Encode() (result []byte, err error) {
 	result = []byte{}
-	for key, val := range *u {
-		if bytes, err := encodeUTF8Str(key); err != nil {
-			return result, err
-		} else {
-			result = append(result, bytes...)
+	for _, pro := range *u {
+		data, err := encodeStringPair(pro.Key, pro.Val)
+		if err != nil {
+			return nil, err
 		}
-		if bytes, err := encodeUTF8Str(val); err != nil {
-			return result, err
-		} else {
-			result = append(result, bytes...)
-		}
+		result = append(result, ID_UserProperties)
+		result = append(result, data...)
 	}
 	return
 }
 
 func (u *UserProperties) Read(r *Reader) error {
-	propertyLength, err := r.ReadUint8()
+	key, _, err := r.ReadUTF8Str()
 	if err != nil {
 		return err
 	}
-	// buf, err := readBytes(reader, int(propertyLength))
-	arr := []string{}
-	for i := 0; i <= int(propertyLength); {
-		str, n, err := r.ReadUTF8Str()
-		if err != nil {
-			return err
-		}
-		arr = append(arr, str)
-		i += n
+	val, _, err := r.ReadUTF8Str()
+	if err != nil {
+		return err
 	}
-	if len(arr)%2 == 1 {
-		return errors.New("count of string can't fulfil requirements of key-value pair")
-	}
-	for i := 0; i < len(arr); i += 2 {
-		(*u)[arr[i]] = arr[i+1]
-	}
+	*u = append(*u, UserProperty{key, val})
+
 	return nil
 }

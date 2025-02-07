@@ -35,6 +35,7 @@ func (c *Client) Run(ctx context.Context) (err error) {
 			// panic(err)
 		}
 		logs.Logger.Info().Msgf("%v", p)
+		panic(err)
 		// c.HandlePacket(p)
 		// os.Exit(1)
 		// logs.Logger.Info().Msgf("%b", b)
