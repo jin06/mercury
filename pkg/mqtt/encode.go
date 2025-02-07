@@ -302,3 +302,35 @@ func encodePacketID(id PacketID) []byte {
 func decodeBytePrt(b byte) *QoS {
 	return (*QoS)(&b)
 }
+
+// func encodeStringPair(pair map[string]string) ([]byte, error) {
+// 	var data []byte
+// 	for key, val := range pair {
+
+// 	}
+// 	return
+// }
+
+func encodeStringPair(k, v string) ([]byte, error) {
+	key, err := encodeUTF8Str(k)
+	if err != nil {
+		return nil, err
+	}
+	value, err := encodeUTF8Str(v)
+	if err != nil {
+		return nil, err
+	}
+	return append(key, value...), nil
+}
+
+func decodeStringPair(data []byte) (string, string, int, error) {
+	k, nk, err := decodeUTF8Str(data)
+	if err != nil {
+		return "", "", nk, err
+	}
+	v, nv, err := decodeUTF8Str(data[nk:])
+	if err != nil {
+		return "", "", nk + nv, err
+	}
+	return k, v, nk + nv, nil
+}

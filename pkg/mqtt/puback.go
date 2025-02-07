@@ -24,7 +24,7 @@ func (p *Puback) Encode() ([]byte, error) {
 			result = append(result, reasonString...)
 		}
 
-		if userProperties, err := p.UserProperties.toBytes(); err != nil {
+		if userProperties, err := p.UserProperties.Encode(); err != nil {
 			return []byte{}, nil
 		} else {
 			length += byte(len(userProperties))

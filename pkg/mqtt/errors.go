@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrProtocol           = errors.New("protocol error")
+	ErrMalformedPacket    = errors.New("malformed packet")
 	ErrUnsupportVersion   = errors.New("unsupported version")
 	ErrNullClientID       = errors.New("null client id")
 	ErrMaximumPacketSize  = errors.New("maximum packet size can't by zero")

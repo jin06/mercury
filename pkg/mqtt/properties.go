@@ -457,7 +457,7 @@ func writeProperties(writer io.Writer, p *Properties) error {
 
 type UserProperties map[string]string
 
-func (u *UserProperties) toBytes() (result []byte, err error) {
+func (u *UserProperties) Encode() (result []byte, err error) {
 	result = []byte{}
 	for key, val := range *u {
 		if bytes, err := encodeUTF8Str(key); err != nil {
