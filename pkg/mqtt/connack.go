@@ -11,55 +11,28 @@ type Connack struct {
 }
 
 func (c *Connack) Encode() (result []byte, err error) {
-	// result = toHeader(CONNACK)
-	// result = append(result, 0, byte(c.ReasonCode))
-	// if c.SessionPresent {
-	// 	result[2] |= 0x00000001
-	// }
-	// if c.Version == MQTT5 {
-	// 	result = append(result, 24)
-	// 	var pl int = 0
-	// 	result = append(result, 0x11)
-	// 	pl++
-	// 	result = append(result, uint32ToBytes(c.Properties.SessionExpiryInterval)...)
-	// 	pl += 4
-	// 	result = append(result, 0x21)
-	// 	pl++
-	// 	result = append(result, uint16ToBytes(c.Properties.ReceiveMaximum)...)
-	// 	pl += 2
-	// 	result = append(result, 0x22)
-	// 	pl++
-	// 	result = append(result, uint16ToBytes(c.Properties.TopicAliasMaximum)...)
-	// 	pl += 2
-	// 	result = append(result, 0x25)
-	// 	pl++
-	// 	result = append(result, boolTobyte(c.Properties.RetainAvailable))
-	// 	pl++
-	// 	result = append(result, 0x2a)
-	// 	pl++
-	// 	result = append(result, boolTobyte(c.Properties.SharedSubscriptionAvailable))
-	// 	pl++
-	// 	result = append(result, 0x27)
-	// 	pl++
-	// 	result = append(result, uint32ToBytes(c.Properties.MaximumPacketSize)...)
-	// 	pl += 4
-	// 	result = append(result, 0x28)
-	// 	pl++
-	// 	result = append(result, boolTobyte(c.Properties.WildcardSubscriptionAvailable))
-	// 	pl++
-	// 	result = append(result, 0x29)
-	// 	pl++
-	// 	result = append(result, boolTobyte(c.Properties.SubscriptionIdentifierAvailable))
-	// 	pl++
-	// 	result[4] = byte(pl)
-	// 	result[1] = byte(pl + 3)
-	// }
-
+	// todo change size
+	if result, err = c.FixHeader.Encode(); err != nil {
+		return nil, err
+	}
+	if body, err := c.EncodeBody(); err != nil {
+		return nil, err
+	} else {
+		result = append(result, body...)
+	}
 	return
 }
 
 func (c *Connack) EncodeBody() ([]byte, error) {
-	return nil, nil
+	result := make([]byte, 0)
+	result = append(result, encodeBool(c.SessionPresent))
+	result = append(result, byte(c.ReasonCode))
+	if data, err := c.Properties.Encode(); err != nil {
+		return nil, err
+	} else {
+		result = append(result, data...)
+	}
+	return result, nil
 }
 
 func (c *Connack) Decode(data []byte) (n int, err error) {
