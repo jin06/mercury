@@ -76,11 +76,12 @@ func (c *Connect) EncodeBody() ([]byte, error) {
 }
 
 func (c *Connect) Decode(data []byte) (int, error) {
-	l, err := c.FixHeader.Decode(data)
+	n, err := c.FixHeader.Decode(data)
 	if err != nil {
 		return 0, err
 	}
-	return c.DecodeBody(data[l:])
+	bodyLen, err := c.DecodeBody(data[n:])
+	return bodyLen + n, err
 }
 
 func (c *Connect) DecodeBody(data []byte) (int, error) {

@@ -35,12 +35,35 @@ func (c *Connack) EncodeBody() ([]byte, error) {
 	return result, nil
 }
 
-func (c *Connack) Decode(data []byte) (n int, err error) {
-	return
+func (c *Connack) Decode(data []byte) (int, error) {
+	c.FixHeader = &FixedHeader{}
+	n, err := c.FixHeader.Decode(data)
+	if err != nil {
+		return 0, err
+	}
+	bodyLen, err := c.DecodeBody(data[n:c.FixHeader.RemainingLength])
+	return bodyLen + n, err
 }
 
-func (c *Connack) DecodeBody(data []byte) (n int, err error) {
-	return
+func (c *Connack) DecodeBody(data []byte) (int, error) {
+	i, err := 0, error(nil)
+
+	if c.SessionPresent, err = decodeBool(data[i]); err != nil {
+		return i, err
+	}
+	i++
+	c.ReasonCode = ReasonCode(data[i])
+	i++
+	if c.Properties == nil {
+		c.Properties = &Properties{}
+	}
+
+	n, err := c.Properties.Decode(data[i:])
+	if err != nil {
+		return i, err
+	}
+
+	return i + n, nil
 }
 
 func (c *Connack) Read(r *Reader) error {
@@ -58,45 +81,20 @@ func (c *Connack) ReadBody(r *Reader) error {
 	}
 	_, err = c.DecodeBody(data)
 	return err
-	// var msgLen byte
-	// if msgLen, err = readByte(reader); err != nil {
-	// 	return
-	// }
-	// length := int(msgLen)
-	// if length < 2 {
-	// 	return ErrProtocol
-	// }
-	// if flags, err := readByte(reader); err != nil {
-	// 	if (flags & 0x00000001) == 0x00000001 {
-	// 		c.SessionPresent = true
-	// 	}
-	// 	return err
-	// }
-	// if code, err := readByte(reader); err != nil {
-	// 	return err
-	// } else {
-	// 	c.ReasonCode = ReasonCode(code)
-	// }
-	// if length > 2 {
-	// 	c.Properties, err = readProperties(reader)
-	// }
 }
 
-func (c *Connack) Write(w *Writer) error {
-	_, err := w.Write([]byte{encodeBool(c.SessionPresent)})
+func (c *Connack) Write(w *Writer) (int, error) {
+	data, err := c.Encode()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	_, err = w.Write([]byte{byte(c.ReasonCode)})
-	if err != nil {
-		return err
-	}
-	if c.Properties != nil {
-		writeProperties(w, c.Properties)
-	}
-	return nil
+	return w.Write(data)
 }
 
-func (c *Connack) WriteBody(w *Writer) error {
-	return nil
+func (c *Connack) WriteBody(w *Writer) (int, error) {
+	data, err := c.EncodeBody()
+	if err != nil {
+		return 0, err
+	}
+	return w.Write(data)
 }
