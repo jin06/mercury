@@ -18,6 +18,17 @@ func (v ProtocolVersion) Name() string {
 	return "unsupported"
 }
 
+func (v ProtocolVersion) Check() error {
+	switch v {
+	case MQTT3:
+	case MQTT4:
+	case MQTT5:
+	default:
+		return ErrUnsupportVersion
+	}
+	return nil
+}
+
 const (
 	MQTT3 ProtocolVersion = 3
 	MQTT4 ProtocolVersion = 4

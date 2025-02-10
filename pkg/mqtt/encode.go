@@ -152,6 +152,10 @@ func decodeLength(b []byte) (int, error) {
 	return int(l), nil
 }
 
+func encodeKeepAlive(l uint16) []byte {
+	return encodeUint16(l)
+}
+
 func decodeKeepAlive(l []byte) uint16 {
 	res, _ := utils.ToUint16(l)
 	return res
@@ -213,6 +217,13 @@ func decodeUTF8Ptr(data []byte) (*string, int, error) {
 		return nil, n, err
 	}
 	return &s, n, err
+}
+
+func encodeProtocolVersion(v ProtocolVersion) (byte, error) {
+	if err := v.Check(); err != nil {
+		return 0, err
+	}
+	return byte(v), nil
 }
 
 func decodeProtocolVersion(b byte) (ProtocolVersion, error) {

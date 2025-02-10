@@ -22,57 +22,100 @@ type Connect struct {
 }
 
 func (c *Connect) Encode() (result []byte, err error) {
-	//Fixed header
-	result = toHeader(CONNECT)
-	//Variable header
-	var buf []byte
-	if buf, err = encodeUTF8Str(c.protocolName()); err != nil {
-		return
+	if result, err = c.FixHeader.Encode(); err != nil {
+		return nil, err
 	}
-	result = append(result, buf...)
-	result = append(result, byte(c.Version))
-	result = append(result, c.encodeFlag())
-	result = append(result, encodeUint16(c.KeepAlive)...)
-	if buf, err = c.Properties.Encode(); err != nil {
-		result = append(result, buf...)
+	if body, err := c.EncodeBody(); err != nil {
+		return nil, err
+	} else {
+		result = append(result, body...)
 	}
-	if c.ClientID == "" {
-		return nil, ErrNullClientID
-	}
-	if buf, err = encodeUTF8Str(c.ClientID); err != nil {
-		return
-	}
-	result = append(result, buf...)
-	if c.Will != nil {
-		if c.Version == MQTT5 {
-			// if buf, err = encodeWillProperties(c.Will.Properties); err != nil {
-			// 	return
-			// }
-			result = append(result, buf...)
-		}
-		if buf, err = encodeUTF8Str(c.Will.Topic); err != nil {
-			return
-		}
-		result = append(result, buf...)
-		if buf, err = encodeUTF8Str(c.Will.Message); err != nil {
-			return
-		}
-		result = append(result, buf...)
-	}
-	if buf, err = encodeUTF8Str(c.Username); err != nil {
-		return
-	}
-	result = append(result, buf...)
-	if buf, err = encodeUTF8Str(c.Password); err != nil {
-		return
-	}
-	result = append(result, buf...)
-
 	return
 }
 
 func (c *Connect) EncodeBody() ([]byte, error) {
-	return nil, nil
+	var data []byte
+
+	// Encode Protocol Name
+	if protocolData, err := encodeUTF8Str(c.ProtocolName); err != nil {
+		return nil, err
+	} else {
+		data = append(data, protocolData...)
+	}
+
+	// Encode Protocol Version
+	if version, err := encodeProtocolVersion(c.Version); err != nil {
+		return nil, err
+	} else {
+		data = append(data, version)
+	}
+
+	// Encode Connect Flags
+	if flagData, err := c.encodeFlag(); err != nil {
+		return nil, err
+	} else {
+		data = append(data, flagData)
+	}
+
+	// Encode KeepAlive
+	data = append(data, encodeKeepAlive(c.KeepAlive)...)
+
+	// Encode Properties (MQTT 5.0 only)
+	if c.Version.IsMQTT5() && c.Properties != nil {
+		propertiesData, err := c.Properties.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, propertiesData...)
+	}
+
+	// Encode Client ID
+	if clientIDData, err := encodeUTF8Str(c.ClientID); err != nil {
+		return nil, err
+	} else {
+		data = append(data, clientIDData...)
+	}
+
+	// Encode Will Message (if Will Flag is set)
+	if c.WillFlag {
+		if c.Version.IsMQTT5() {
+			propertiesData, err := c.Will.Properties.Encode()
+			if err != nil {
+				return nil, err
+			}
+			data = append(data, propertiesData...)
+		}
+		if willTopicData, err := encodeUTF8Str(c.Will.Topic); err != nil {
+			return nil, err
+		} else {
+			data = append(data, willTopicData...)
+		}
+		if willMessageData, err := encodeUTF8Str(c.Will.Message); err != nil {
+			return nil, err
+		} else {
+			data = append(data, willMessageData...)
+		}
+	}
+
+	// Encode Username (if Username Flag is set)
+	if c.UserNameFlag {
+		if usernameData, err := encodeUTF8Str(c.Username); err != nil {
+			return nil, err
+		} else {
+			data = append(data, usernameData...)
+		}
+	}
+
+	// Encode Password (if Password Flag is set)
+	if c.PasswordFlag {
+		if passwordData, err := encodeUTF8Str(c.Password); err != nil {
+			return nil, err
+		} else {
+			data = append(data, passwordData...)
+		}
+	}
+
+	return data, nil
 }
 
 func (c *Connect) Decode(data []byte) (int, error) {
@@ -85,9 +128,9 @@ func (c *Connect) Decode(data []byte) (int, error) {
 }
 
 func (c *Connect) DecodeBody(data []byte) (int, error) {
-	// total := len(data)
 	var start int
 
+	// Decode Protocol Name
 	if protocol, n, err := decodeUTF8Str(data[start:]); err != nil {
 		return start, err
 	} else {
@@ -95,21 +138,22 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		start += n
 	}
 
+	// Decode Protocol Version
 	if version, err := decodeProtocolVersion(data[start]); err != nil {
 		return start, err
 	} else {
 		c.Version = version
 		start++
 	}
-	{
-		c.decodeFlag(data[start])
-		start++
-	}
-	{
-		c.KeepAlive = decodeKeepAlive(data[start : start+2])
-		start += 2
-	}
+	// Decode Connect Flags
+	c.decodeFlag(data[start])
+	start++
 
+	// Decode KeepAlive
+	c.KeepAlive = decodeKeepAlive(data[start : start+2])
+	start += 2
+
+	// Decode Properties (MQTT 5.0 only)
 	if c.Version.IsMQTT5() {
 		c.Properties = new(Properties)
 		n, err := c.Properties.Decode(data[start:])
@@ -119,6 +163,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		start += n
 	}
 	{
+		// Decode Client ID
 		clientID, n, err := decodeUTF8Str(data[start:])
 		if err != nil {
 			return start, err
@@ -126,6 +171,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		c.ClientID = clientID
 		start += n
 	}
+	// Decode Will Message (if Will Flag is set)
 	if c.WillFlag {
 		if c.Version.IsMQTT5() {
 			c.Will.Properties.Decode(data[start:])
@@ -144,6 +190,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		}
 	}
 	if c.UserNameFlag {
+		// Decode Username (if Username Flag is set)
 		if user, n, err := decodeUTF8Str(data[start:]); err != nil {
 			return start, err
 		} else {
@@ -152,6 +199,7 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 		}
 	}
 	if c.PasswordFlag {
+		// Decode Password (if Password Flag is set)
 		if pass, n, err := decodeUTF8Str(data[start:]); err != nil {
 			return start, err
 		} else {
@@ -200,13 +248,31 @@ func (c *Connect) protocolName() string {
 	return ""
 }
 
+func (c *Connect) encodeFlag() (byte, error) {
+	var flag byte
+	if c.UserNameFlag {
+		flag = flag | 0b1000000
+	}
+	if c.PasswordFlag {
+		flag = flag | 0b01000000
+	}
+	if c.WillFlag && c.Will != nil {
+		flag = flag | 0b00100100
+		flag = flag | byte((c.Will.QoS&0b00011000)<<3)
+	}
+	if c.Clean {
+		flag = flag | 0b00000010
+	}
+	return flag, nil
+}
+
 func (c *Connect) decodeFlag(flag byte) {
 	c.UserNameFlag = (flag&0b1000000 == 0b1000000)
 	c.PasswordFlag = (flag&0b01000000 == 0b01000000)
 	if flag&0b00000100 == 0b00000100 {
 		c.Will = &Will{}
 		c.Will.Retain = (flag&0b00100000 == 0b00100000)
-		c.Will.QoS = QoS(flag & 0b00011000)
+		c.Will.QoS = QoS((flag & 0b00011000) >> 3)
 	}
 	c.Clean = (flag&0b00000010 == 0b00000010)
 	c.WillFlag = (flag&0b00000100 == 0b00000100)
@@ -220,23 +286,23 @@ func (c *Connect) decodeFlag(flag byte) {
 	return
 }
 
-func (c *Connect) encodeFlag() byte {
-	var flags byte
-	if c.Username != "" {
-		flags = flags | 0b1
-	}
-	if c.Password != "" {
-		flags = flags | 0b01
-	}
-	if c.Will != nil {
-		flags = flags | (byte(c.Will.QoS) << 3)
-		flags = flags | 0b00000010
-	}
-	if c.Clean {
-		flags = flags | 0b00000001
-	}
-	return flags
-}
+// func (c *Connect) encodeFlag() byte {
+// 	var flags byte
+// 	if c.Username != "" {
+// 		flags = flags | 0b1
+// 	}
+// 	if c.Password != "" {
+// 		flags = flags | 0b01
+// 	}
+// 	if c.Will != nil {
+// 		flags = flags | (byte(c.Will.QoS) << 3)
+// 		flags = flags | 0b00000010
+// 	}
+// 	if c.Clean {
+// 		flags = flags | 0b00000001
+// 	}
+// 	return flags
+// }
 
 func (c *Connect) String() string {
 	return ""

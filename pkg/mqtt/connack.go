@@ -83,18 +83,20 @@ func (c *Connack) ReadBody(r *Reader) error {
 	return err
 }
 
-func (c *Connack) Write(w *Writer) (int, error) {
+func (c *Connack) Write(w *Writer) error {
 	data, err := c.Encode()
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return w.Write(data)
+	_, err = w.Write(data)
+	return err
 }
 
-func (c *Connack) WriteBody(w *Writer) (int, error) {
+func (c *Connack) WriteBody(w *Writer) error {
 	data, err := c.EncodeBody()
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return w.Write(data)
+	_, err = w.Write(data)
+	return err
 }
