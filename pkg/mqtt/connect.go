@@ -21,16 +21,17 @@ type Connect struct {
 	Properties   *Properties
 }
 
-func (c *Connect) Encode() (result []byte, err error) {
-	if result, err = c.FixHeader.Encode(); err != nil {
+func (c *Connect) Encode() ([]byte, error) {
+	body, err := c.EncodeBody()
+	if err != nil {
 		return nil, err
 	}
-	if body, err := c.EncodeBody(); err != nil {
+	c.FixHeader.RemainingLength = len(body)
+	header, err := c.FixHeader.Encode()
+	if err != nil {
 		return nil, err
-	} else {
-		result = append(result, body...)
 	}
-	return
+	return append(header, body...), nil
 }
 
 func (c *Connect) EncodeBody() ([]byte, error) {

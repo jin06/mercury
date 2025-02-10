@@ -10,17 +10,19 @@ type Connack struct {
 	SessionPresent bool
 }
 
-func (c *Connack) Encode() (result []byte, err error) {
+func (c *Connack) Encode() ([]byte, error) {
 	// todo change size
-	if result, err = c.FixHeader.Encode(); err != nil {
+	body, err := c.EncodeBody()
+	if err != nil {
 		return nil, err
 	}
-	if body, err := c.EncodeBody(); err != nil {
+	c.FixHeader.RemainingLength = len(body)
+	header, err := c.FixHeader.Encode()
+	if err != nil {
 		return nil, err
-	} else {
-		result = append(result, body...)
 	}
-	return
+	header = append(header, body...)
+	return header, nil
 }
 
 func (c *Connack) EncodeBody() ([]byte, error) {

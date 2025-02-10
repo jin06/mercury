@@ -43,7 +43,15 @@ type FixedHeader struct {
 }
 
 func (f *FixedHeader) Encode() ([]byte, error) {
-	panic("todo")
+	var data []byte
+	data = append(data, byte(f.PacketType<<4))
+	data = append(data, (f.Flags & 0b0001111))
+	if length, err := encodeVariableByteInteger(f.RemainingLength); err != nil {
+		return nil, err
+	} else {
+		data = append(data, length...)
+	}
+	return data, nil
 }
 
 // Decode decodes a fixed header from the given byte slice ([]byte).
