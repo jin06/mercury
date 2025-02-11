@@ -129,7 +129,7 @@ func (r *Reader) ReadLength() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int(l), err
+	return int(l), nil
 }
 
 func (r *Reader) ReadUTF8Str() (string, int, error) {
@@ -140,7 +140,7 @@ func (r *Reader) ReadUTF8Str() (string, int, error) {
 	}
 	if n != 0 {
 		if p, err := r.Read(n); err != nil {
-			return "", 0, nil
+			return "", 0, err
 		} else {
 			s = string(p)
 		}

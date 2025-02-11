@@ -1,5 +1,9 @@
 package mqtt
 
+func NewConnack(header *FixedHeader) *Connack {
+	return &Connack{FixHeader: header}
+}
+
 type Connack struct {
 	Version   ProtocolVersion
 	FixHeader *FixedHeader
