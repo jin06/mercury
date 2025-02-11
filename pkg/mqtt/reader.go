@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"io"
 	"net"
-
-	"github.com/jin06/mercury/pkg/utils"
 )
 
 func NewReader(c net.Conn) *Reader {
@@ -81,7 +79,7 @@ func (r *Reader) ReadUint16() (uint16, error) {
 	if err != nil {
 		return 0, err
 	}
-	return utils.ToUint16(p)
+	return decodeUint16(p)
 }
 
 func (r *Reader) ReadUint16Ptr() (*uint16, error) {
@@ -97,7 +95,7 @@ func (r *Reader) ReadUint32() (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	return utils.ToUint32(p)
+	return decodeUint32(p)
 }
 
 func (r *Reader) ReadUint32Ptr() (*uint32, error) {
@@ -113,7 +111,7 @@ func (r *Reader) ReadUint64() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return utils.ToUint64(p)
+	return decodeUint64(p)
 }
 
 func (r *Reader) ReadUint64Ptr() (*uint64, error) {

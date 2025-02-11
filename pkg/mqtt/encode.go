@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
-	"github.com/jin06/mercury/pkg/utils"
 )
 
 func encodeVariableByteInteger(length int) ([]byte, error) {
@@ -126,17 +124,6 @@ func writeVariableByteInteger(writer *Writer, length int) error {
 	return err
 }
 
-func bytesToUint64(l []byte) (ret uint64, err error) {
-	if len(l) > 4 {
-		return ret, errors.New("input slice length must <= 4")
-	}
-	for i := 0; i < len(l); i++ {
-		ret = ret << 8
-		ret = ret + uint64(l[i])
-	}
-	return
-}
-
 func encodeLength(l int) ([]byte, error) {
 	res := make([]byte, 2)
 	res[0] = byte(l >> 8)
@@ -145,19 +132,19 @@ func encodeLength(l int) ([]byte, error) {
 }
 
 func decodeLength(b []byte) (int, error) {
-	l, err := utils.ToUint16(b)
+	l, err := decodeUint16(b)
 	if err != nil {
 		return 0, err
 	}
 	return int(l), nil
 }
 
-func encodeKeepAlive(l uint16) []byte {
-	return encodeUint16(l)
+func encodeKeepAlive(u uint16) []byte {
+	return encodeUint16(u)
 }
 
-func decodeKeepAlive(l []byte) uint16 {
-	res, _ := utils.ToUint16(l)
+func decodeKeepAlive(data []byte) uint16 {
+	res, _ := decodeUint16(data)
 	return res
 }
 
@@ -271,7 +258,15 @@ func encodeUint16(source uint16) []byte {
 }
 
 func decodeUint16(data []byte) (uint16, error) {
-	return utils.ToUint16(data)
+	var ret uint16
+	if len(data) > 2 {
+		return 0, ErrBytesShorter
+	}
+	for i := 0; i < len(data); i++ {
+		ret = ret << 8
+		ret = ret + uint16(data[i])
+	}
+	return ret, nil
 }
 
 func decodeUint16Ptr(data []byte) (*uint16, error) {
@@ -292,7 +287,15 @@ func encodeUint32(source uint32) []byte {
 }
 
 func decodeUint32(data []byte) (uint32, error) {
-	return utils.ToUint32(data)
+	var ret uint32
+	if len(data) > 4 {
+		return 0, ErrBytesShorter
+	}
+	for i := 0; i < len(data); i++ {
+		ret = ret << 8
+		ret = ret + uint32(data[i])
+	}
+	return ret, nil
 }
 
 func decodeUint32Ptr(data []byte) (*uint32, error) {
