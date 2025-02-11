@@ -1,9 +1,5 @@
 package mqtt
 
-import (
-	"io"
-)
-
 const (
 	ID_PayloadFormat                   byte = 0x01
 	ID_MessageExpiryInterval           byte = 0x02
@@ -455,9 +451,9 @@ func (p *Properties) Read(r *Reader) error {
 }
 
 // unimplemented
-func writeProperties(writer io.Writer, p *Properties) error {
-	return nil
-}
+// func writeProperties(writer io.Writer, p *Properties) error {
+// 	return nil
+// }
 
 type UserProperty struct {
 	Key string
