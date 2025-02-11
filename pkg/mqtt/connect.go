@@ -229,24 +229,22 @@ func (c *Connect) ReadBody(r *Reader) error {
 	return err
 }
 
-func (c *Connect) Write(reader *Writer) error {
-	return nil
+func (c *Connect) Write(writer *Writer) error {
+	data, err := c.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(data)
+	return err
 }
 
 func (c *Connect) WriteBody(w *Writer) error {
-	return nil
-}
-
-func (c *Connect) protocolName() string {
-	switch c.Version {
-	case MQTT3:
-		return "MQIsdp"
-	case MQTT4:
-		return "MQTT"
-	case MQTT5:
-		return "MQTT"
+	data, err := c.EncodeBody()
+	if err != nil {
+		return err
 	}
-	return ""
+	_, err = w.Write(data)
+	return err
 }
 
 func (c *Connect) encodeFlag() (byte, error) {
@@ -286,24 +284,6 @@ func (c *Connect) decodeFlag(flag byte) {
 	}
 	return
 }
-
-// func (c *Connect) encodeFlag() byte {
-// 	var flags byte
-// 	if c.Username != "" {
-// 		flags = flags | 0b1
-// 	}
-// 	if c.Password != "" {
-// 		flags = flags | 0b01
-// 	}
-// 	if c.Will != nil {
-// 		flags = flags | (byte(c.Will.QoS) << 3)
-// 		flags = flags | 0b00000010
-// 	}
-// 	if c.Clean {
-// 		flags = flags | 0b00000001
-// 	}
-// 	return flags
-// }
 
 func (c *Connect) String() string {
 	return ""
