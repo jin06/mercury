@@ -303,6 +303,33 @@ func decodeUint32Ptr(data []byte) (*uint32, error) {
 	return &res, nil
 }
 
+// encodeUint64 encodes a uint64 value into a byte slice.
+func encodeUint64(value uint64) []byte {
+	var data []byte
+	// Extract each byte by shifting the uint64 value and appending it to the slice
+	for i := 0; i < 8; i++ {
+		// Shift and mask to get each byte from most significant to least significant
+		data = append([]byte{byte(value >> (8 * (7 - i)))}, data...)
+	}
+	// Remove leading zero bytes, keeping only necessary bytes to represent the uint64
+	for len(data) > 1 && data[0] == 0 {
+		data = data[1:]
+	}
+	return data
+}
+
+func decodeUint64(data []byte) (uint64, error) {
+	if len(data) > 8 {
+		return 0, ErrBytesShorter
+	}
+	var ret uint64
+	for i := 0; i < len(data); i++ {
+		ret = ret << 8
+		ret = ret + uint64(data[i])
+	}
+	return ret, nil
+}
+
 func encodePacketID(id PacketID) []byte {
 	return []byte{
 		byte(id >> 8),
