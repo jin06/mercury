@@ -1,62 +1,137 @@
 package mqtt
 
-import "io"
+func NewPubcomp(header *FixedHeader) *Pubcomp {
+	return &Pubcomp{FixedHeader: header}
+}
 
 type Pubcomp struct {
-	PacketID       PacketID
-	Version        ProtocolVersion
-	ReasonCode     ReasonCode
-	ReasonString   string
-	UserProperties UserProperties
+	*FixedHeader
+	Version    ProtocolVersion
+	ReasonCode ReasonCode
+	Properties *Properties
+	PacketID   PacketID
 }
 
 func (p *Pubcomp) Encode() ([]byte, error) {
-	// result := toHeader(PUBCOMP)
-	// if p.Version == MQTT5 {
-	// 	result[1] = 0b00000100
-	// 	result = append(result, p.PacketID.ToBytes()...)
-	// 	result = append(result, byte(p.ReasonCode), 0)
-	// 	var length byte = 0
-	// 	if reasonString, err := encodeUTF8Str(p.ReasonString); err != nil {
-	// 		return []byte{}, nil
-	// 	} else {
-	// 		length += byte(len(reasonString))
-	// 		result = append(result, reasonString...)
-	// 	}
-
-	// 	if userProperties, err := p.UserProperties.toBytes(); err != nil {
-	// 		return []byte{}, nil
-	// 	} else {
-	// 		length += byte(len(userProperties))
-	// 		result = append(result, userProperties...)
-	// 	}
-	// 	result[5] = length
-
-	// } else {
-	// 	result[1] = 0b00000010
-	// 	result = append(result, p.PacketID.ToBytes()...)
-	// }
-	// return result, nil
-	return nil, nil
+	body, err := p.EncodeBody()
+	if err != nil {
+		return nil, err
+	}
+	p.FixedHeader.RemainingLength = len(body)
+	header, err := p.FixedHeader.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return append(header, body...), nil
 }
 
-func (p *Pubcomp) Decode(reader io.Reader) error {
-	// if packetID, err := readUint16(reader); err != nil {
-	// 	return err
-	// } else {
-	// 	p.PacketID = PacketID(packetID)
-	// }
-	// if p.Version == MQTT5 {
-	// 	if reasonCode, err := readByte(reader); err != nil {
-	// 		return err
-	// 	} else {
-	// 		p.ReasonCode = ReasonCode(reasonCode)
-	// 	}
-	// 	var userProperties UserProperties
-	// 	if err := userProperties.Read(reader); err != nil {
-	// 		return err
-	// 	}
-	// 	p.UserProperties = userProperties
-	// }
-	return nil
+func (p *Pubcomp) Decode(data []byte) (int, error) {
+	n, err := p.FixedHeader.Decode(data)
+	if err != nil {
+		return 0, err
+	}
+	bodyLen, err := p.DecodeBody(data[n:])
+	return bodyLen + n, err
+}
+
+func (p *Pubcomp) DecodeBody(data []byte) (int, error) {
+	var start int
+
+	// Decode Packet ID
+	packetID, err := decodeUint16(data[start : start+2])
+	if err != nil {
+		return start, err
+	}
+	p.PacketID = PacketID(packetID)
+	start += 2
+
+	// Decode Reason Code (MQTT 5.0 only)
+	if p.Version == MQTT5 {
+		if len(data) > start {
+			p.ReasonCode = ReasonCode(data[start])
+			start++
+		}
+
+		// Decode Properties (MQTT 5.0 only)
+		if len(data) > start {
+			p.Properties = new(Properties)
+			n, err := p.Properties.Decode(data[start:])
+			if err != nil {
+				return start, err
+			}
+			start += n
+		}
+	}
+
+	return len(data), nil
+}
+
+func (p *Pubcomp) ReadBody(r *Reader) error {
+	data, err := r.Read(p.FixedHeader.RemainingLength)
+	if err != nil {
+		return err
+	}
+	_, err = p.DecodeBody(data)
+	return err
+}
+
+func (p *Pubcomp) Write(w *Writer) error {
+	data, err := p.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
+func (p *Pubcomp) EncodeBody() ([]byte, error) {
+	var data []byte
+
+	// Encode Packet ID
+	data = append(data, encodePacketID(p.PacketID)...)
+
+	// Encode Reason Code (MQTT 5.0 only)
+	if p.Version == MQTT5 {
+		data = append(data, byte(p.ReasonCode))
+
+		// Encode Properties (MQTT 5.0 only)
+		if p.Properties != nil {
+			propertiesData, err := p.Properties.Encode()
+			if err != nil {
+				return nil, err
+			}
+			data = append(data, propertiesData...)
+		}
+	}
+
+	return data, nil
+}
+
+func (p *Pubcomp) WriteBody(w *Writer) error {
+	data, err := p.EncodeBody()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
+func (p *Pubcomp) PacketType() PacketType {
+	return PUBCOMP
+}
+
+func (p *Pubcomp) RemainingLength() int {
+	length := 2 // Packet ID length
+	if p.Version == MQTT5 {
+		length++ // Reason Code length
+		if p.Properties != nil {
+			propertiesLength, _ := p.Properties.Encode()
+			length += len(propertiesLength)
+		}
+	}
+	return length
+}
+
+func (p *Pubcomp) String() string {
+	return "Pubcomp Packet"
 }

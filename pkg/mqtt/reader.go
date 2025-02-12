@@ -28,6 +28,51 @@ func (r *Reader) Read(n int) ([]byte, error) {
 	return p, nil
 }
 
+func (r *Reader) ReadPacket() (Packet, error) {
+	header := &FixedHeader{}
+	if err := header.Read(r); err != nil {
+		return nil, err
+	}
+	var packet Packet
+	switch header.PacketType {
+	case CONNECT:
+		packet = NewConnect(header)
+	case CONNACK:
+		packet = NewConnack(header)
+	case PUBLISH:
+		packet = NewPublish(header)
+	case PUBACK:
+		packet = NewPuback(header)
+	case PUBREC:
+		packet = NewPubrec(header)
+	case PUBREL:
+		packet = NewPubrecl(header)
+	case PUBCOMP:
+		packet = NewPubcomp(header)
+	case SUBSCRIBE:
+		packet = NewSubscribe(header)
+	case SUBACK:
+		packet = NewSuback(header)
+	case UNSUBSCRIBE:
+		packet = NewUnsubscribe(header)
+	case UNSUBACK:
+		packet = NewUnsuback(header)
+	case PINGREQ:
+		packet = NewPingreq(header)
+	case PINGRESP:
+		packet = NewPingresp(header)
+	case DISCONNECT:
+		packet = NewDisconnect(header)
+	}
+	if packet == nil {
+		return nil, ErrMalformedPacket
+	}
+	if err := packet.ReadBody(r); err != nil {
+		return nil, err
+	}
+	return packet, nil
+}
+
 func (r *Reader) ReadBytePtr() (*byte, error) {
 	b, err := r.ReadByte()
 	if err != nil {

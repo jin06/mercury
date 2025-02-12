@@ -1,12 +1,12 @@
 package mqtt
 
 func NewConnect(header *FixedHeader) *Connect {
-	return &Connect{FixHeader: header}
+	return &Connect{FixedHeader: header}
 }
 
 type Connect struct {
+	*FixedHeader
 	Version      ProtocolVersion
-	FixHeader    *FixedHeader
 	ProtocolName string
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
 	UserNameFlag bool
@@ -26,8 +26,8 @@ func (c *Connect) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.FixHeader.RemainingLength = len(body)
-	header, err := c.FixHeader.Encode()
+	c.FixedHeader.RemainingLength = len(body)
+	header, err := c.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (c *Connect) EncodeBody() ([]byte, error) {
 }
 
 func (c *Connect) Decode(data []byte) (int, error) {
-	n, err := c.FixHeader.Decode(data)
+	n, err := c.FixedHeader.Decode(data)
 	if err != nil {
 		return 0, err
 	}
@@ -213,15 +213,15 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 }
 
 func (c *Connect) Read(r *Reader) (err error) {
-	c.FixHeader = new(FixedHeader)
-	if err := c.FixHeader.Read(r); err != nil {
+	c.FixedHeader = new(FixedHeader)
+	if err := c.FixedHeader.Read(r); err != nil {
 		return err
 	}
 	return c.ReadBody(r)
 }
 
 func (c *Connect) ReadBody(r *Reader) error {
-	data, err := r.Read(c.FixHeader.RemainingLength)
+	data, err := r.Read(c.FixedHeader.RemainingLength)
 	if err != nil {
 		return err
 	}
