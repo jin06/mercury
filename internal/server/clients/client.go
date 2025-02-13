@@ -25,7 +25,7 @@ type Client struct {
 }
 
 func (c *Client) Run(ctx context.Context) (err error) {
-	c.server.On(c)
+	c.server.Reg(c)
 	c.reader = mqtt.NewReader(c.Conn)
 	for {
 		// b := make([]byte, 1000)

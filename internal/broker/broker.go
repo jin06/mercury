@@ -16,7 +16,7 @@ func NewBroker() *Broker {
 }
 
 type Broker struct {
-	Server *server.Server
+	Server server.Server
 }
 
 func (b *Broker) Run(ctx context.Context) (err error) {
@@ -28,6 +28,7 @@ func (b *Broker) Run(ctx context.Context) (err error) {
 	b.listen(ctx)
 	return
 }
+
 func (b *Broker) listen(ctx context.Context) {
 	listener, err := net.Listen("tcp", ":1883")
 	if err != nil {
@@ -43,3 +44,11 @@ func (b *Broker) listen(ctx context.Context) {
 		go client.Run(ctx)
 	}
 }
+
+// func (b *Broker) listenTCP(cfg config.Listener) error {
+// 	listener, err := net.Listen("tcp", cfg.Addr)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// }

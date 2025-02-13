@@ -1,5 +1,5 @@
 listeners:
   - type: tcp
     port: 1883
-  - type: tls
-    port: 8883
+  # - type: tls
+  #   port: 8883
