@@ -33,6 +33,5 @@ type Config struct {
 
 type Listener struct {
 	Type string `yaml:"type"`
-	Addr string
-	Port int `yaml:"port"`
+	Addr string `yaml:"addr"`
 }
