@@ -13,8 +13,16 @@ type Subscribe struct {
 }
 
 func (s *Subscribe) Encode() ([]byte, error) {
-	// ... implementation ...
-	return nil, nil
+	body, err := s.EncodeBody()
+	if err != nil {
+		return nil, err
+	}
+	s.FixedHeader.RemainingLength = len(body)
+	header, err := s.FixedHeader.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return append(header, body...), nil
 }
 
 func (s *Subscribe) Decode(data []byte) (int, error) {
@@ -88,7 +96,7 @@ func (s *Subscribe) EncodeBody() ([]byte, error) {
 	var data []byte
 
 	// Encode Packet ID
-	data = append(data, encodePacketID(s.PacketID)...)
+	data = append(data, s.PacketID.Encode()...)
 
 	// Encode Topic Wildcard
 	if topicData, err := encodeUTF8Str(string(s.TopicWildcard)); err != nil {

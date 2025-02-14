@@ -37,7 +37,7 @@ func (p *Publish) Encode() ([]byte, error) {
 		result = append(result, bytes...)
 	}
 	// write message ID
-	result = append(result, encodePacketID(p.PacketID)...)
+	result = append(result, p.PacketID.Encode()...)
 
 	if p.Version == MQTT5 {
 		if p.Properties != nil {

@@ -97,7 +97,7 @@ func (u *Unsubscribe) EncodeBody() ([]byte, error) {
 	var data []byte
 
 	// Encode Packet ID
-	data = append(data, encodePacketID(u.PacketID)...)
+	data = append(data, u.PacketID.Encode()...)
 
 	// Encode Payload
 	for _, topic := range u.Payload {

@@ -17,7 +17,7 @@ func (p *Puback) Encode() ([]byte, error) {
 	result := toHeader(PUBACK)
 	if p.Version == MQTT5 {
 		result[1] = 0b00000100
-		result = append(result, p.PacketID.ToBytes()...)
+		result = append(result, p.PacketID.Encode()...)
 		result = append(result, byte(p.ReasonCode), 0)
 		var length byte = 0
 		if reasonString, err := encodeUTF8Str(p.ReasonString); err != nil {
@@ -37,7 +37,7 @@ func (p *Puback) Encode() ([]byte, error) {
 
 	} else {
 		result[1] = 0b01000000
-		result = append(result, p.PacketID.ToBytes()...)
+		result = append(result, p.PacketID.Encode()...)
 	}
 
 	return result, nil

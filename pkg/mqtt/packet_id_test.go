@@ -6,7 +6,7 @@ import (
 
 func TestPacketID(t *testing.T) {
 	var pid PacketID = 128 + 256
-	bytes := pid.ToBytes()
+	bytes := pid.Encode()
 	t.Log(bytes)
 	if bytes[0] != 0b00000001 {
 		t.Fail()
