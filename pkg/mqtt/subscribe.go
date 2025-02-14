@@ -6,6 +6,7 @@ func NewSubscribe(header *FixedHeader) *Subscribe {
 
 type Subscribe struct {
 	*FixedHeader
+	Version       ProtocolVersion
 	PacketID      PacketID
 	TopicWildcard TopicWildcard
 	Payload       []Subscription
@@ -26,18 +27,30 @@ func (s *Subscribe) Encode() ([]byte, error) {
 }
 
 func (s *Subscribe) Decode(data []byte) (int, error) {
-	// ... implementation ...
-	return 0, nil
+	n, err := s.FixedHeader.Decode(data)
+	if err != nil {
+		return 0, err
+	}
+	bodyLen, err := s.DecodeBody(data[n:])
+	return bodyLen + n, err
 }
 
 func (s *Subscribe) ReadBody(r *Reader) error {
-	// ... implementation ...
-	return nil
+	data, err := r.Read(s.FixedHeader.RemainingLength)
+	if err != nil {
+		return err
+	}
+	_, err = s.DecodeBody(data)
+	return err
 }
 
 func (s *Subscribe) Write(w *Writer) error {
-	// ... implementation ...
-	return nil
+	data, err := s.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
 }
 
 func (s *Subscribe) PacketType() PacketType {
@@ -45,8 +58,16 @@ func (s *Subscribe) PacketType() PacketType {
 }
 
 func (s *Subscribe) RemainingLength() int {
-	// ... implementation ...
-	return 0
+	length := 2 // Packet ID length
+	if s.Version == MQTT5 && s.Properties != nil {
+		propertiesLength, _ := s.Properties.Encode()
+		length += len(propertiesLength)
+	}
+	length += len(s.TopicWildcard) + 2
+	for _, subscription := range s.Payload {
+		length += len(subscription.TopicWildcard) + 3
+	}
+	return length
 }
 
 func (s *Subscribe) String() string {
@@ -63,6 +84,16 @@ func (s *Subscribe) DecodeBody(data []byte) (int, error) {
 	}
 	s.PacketID = PacketID(packetID)
 	start += 2
+
+	// Decode Properties (MQTT 5.0 only)
+	if s.Version == MQTT5 {
+		s.Properties = new(Properties)
+		n, err := s.Properties.Decode(data[start:])
+		if err != nil {
+			return start, err
+		}
+		start += n
+	}
 
 	// Decode Topic Wildcard
 	topicWildcard, n, err := decodeUTF8Str(data[start:])
@@ -97,6 +128,15 @@ func (s *Subscribe) EncodeBody() ([]byte, error) {
 
 	// Encode Packet ID
 	data = append(data, s.PacketID.Encode()...)
+
+	// Encode Properties (MQTT 5.0 only)
+	if s.Version == MQTT5 && s.Properties != nil {
+		propertiesData, err := s.Properties.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, propertiesData...)
+	}
 
 	// Encode Topic Wildcard
 	if topicData, err := encodeUTF8Str(string(s.TopicWildcard)); err != nil {

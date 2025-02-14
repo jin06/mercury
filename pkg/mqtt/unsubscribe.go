@@ -6,8 +6,7 @@ func NewUnsubscribe(header *FixedHeader) *Unsubscribe {
 
 type Unsubscribe struct {
 	*FixedHeader
-	QoS        QoS
-	Dup        bool
+	Version    ProtocolVersion
 	PacketID   PacketID
 	Payload    []TopicWildcard
 	Properties *Properties
@@ -59,6 +58,10 @@ func (u *Unsubscribe) PacketType() PacketType {
 
 func (u *Unsubscribe) RemainingLength() int {
 	length := 2 // Packet ID length
+	if u.Version == MQTT5 && u.Properties != nil {
+		propertiesLength, _ := u.Properties.Encode()
+		length += len(propertiesLength)
+	}
 	for _, topic := range u.Payload {
 		length += 2 + len(topic) // UTF-8 encoded topic length
 	}
@@ -80,6 +83,16 @@ func (u *Unsubscribe) DecodeBody(data []byte) (int, error) {
 	u.PacketID = PacketID(packetID)
 	start += 2
 
+	// Decode Properties (MQTT 5.0 only)
+	if u.Version == MQTT5 {
+		u.Properties = new(Properties)
+		n, err := u.Properties.Decode(data[start:])
+		if err != nil {
+			return start, err
+		}
+		start += n
+	}
+
 	// Decode Payload
 	for start < len(data) {
 		topicWildcard, n, err := decodeUTF8Str(data[start:])
@@ -98,6 +111,15 @@ func (u *Unsubscribe) EncodeBody() ([]byte, error) {
 
 	// Encode Packet ID
 	data = append(data, u.PacketID.Encode()...)
+
+	// Encode Properties (MQTT 5.0 only)
+	if u.Version == MQTT5 && u.Properties != nil {
+		propertiesData, err := u.Properties.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, propertiesData...)
+	}
 
 	// Encode Payload
 	for _, topic := range u.Payload {

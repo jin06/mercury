@@ -1,7 +1,5 @@
 package mqtt
 
-import "io"
-
 type Will struct {
 	Topic      string
 	Message    string
@@ -11,88 +9,97 @@ type Will struct {
 }
 
 type WillProperties struct {
-	// DelayInterval  second
+	// DelayInterval in seconds
 	DelayInterval          uint32
 	PayloadFormatIndicator bool
-	//PublicationExpiryInterval  second
+	// PublicationExpiryInterval in seconds
 	PublicationExpiryInterval uint32
 	ContentType               string
 	ResponseTopic             string
 	CorrelationData           string
 }
 
-func decodeWillProperties(reader io.Reader) (result *WillProperties, err error) {
-	// total, err := readByte(reader)
-	// if err != nil {
-	// 	return result, err
-	// }
-	// result = &WillProperties{}
-	// for i := 0; i < int(total); {
-	// 	var identifier byte
-	// 	if identifier, err = readByte(reader); err != nil {
-	// 		return
-	// 	}
-	// 	i++
-	// 	switch identifier {
-	// 	case 0x18:
-	// 		{
-	// 			i += 4
-	// 			if result.DelayInterval, err = readUint32(reader); err != nil {
-	// 				return
-	// 			}
-	// 		}
-	// 	case 0x01:
-	// 		// payload format
-	// 		{
-	// 			i++
-	// 			if result.PayloadFormatIndicator, err = readBool(reader); err != nil {
-	// 				return
-	// 			}
-	// 		}
-	// 	case 0x02:
-	// 		// publication expiry interval
-	// 		{
-	// 			i += 4
-	// 			if result.PublicationExpiryInterval, err = readUint32(reader); err != nil {
-	// 				return
-	// 			}
+func (w *Will) Encode() ([]byte, error) {
+	var data []byte
 
-	// 		}
-	// 	case 0x03:
-	// 		// content type
-	// 		{
-	// 			var n int
-	// 			if result.ContentType, n, err = readStrN(reader); err != nil {
-	// 				return
-	// 			}
-	// 			i += n
-	// 		}
-	// 	case 0x08:
-	// 		// reponse topic
-	// 		{
-	// 			var n int
-	// 			if result.ResponseTopic, n, err = readStrN(reader); err != nil {
-	// 				return
-	// 			}
-	// 			i += n
-	// 		}
-	// 	case 0x09:
-	// 		// correlation data
-	// 		{
-	// 			var n int
-	// 			if result.CorrelationData, n, err = readStrN(reader); err != nil {
-	// 				return
-	// 			}
-	// 			i += n
-	// 		}
-	// 	}
-	// }
-	return
+	// Encode Topic
+	topicData, err := encodeUTF8Str(w.Topic)
+	if err != nil {
+		return nil, err
+	}
+	data = append(data, topicData...)
+
+	// Encode Message
+	messageData, err := encodeUTF8Str(w.Message)
+	if err != nil {
+		return nil, err
+	}
+	data = append(data, messageData...)
+
+	// Encode QoS and Retain
+	data = append(data, byte(w.QoS))
+	if w.Retain {
+		data[len(data)-1] |= 0b00000001
+	}
+
+	// Encode Properties (MQTT 5.0 only)
+	if w.Properties != nil {
+		propertiesData, err := w.Properties.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, propertiesData...)
+	}
+
+	return data, nil
 }
 
-func encodeWillProperties(will *WillProperties) (result []byte, err error) {
-	if will == nil {
-		return
+func (w *Will) Decode(data []byte) (int, error) {
+	var start int
+
+	// Decode Topic
+	topic, n, err := decodeUTF8Str(data[start:])
+	if err != nil {
+		return start, err
 	}
-	return
+	w.Topic = topic
+	start += n
+
+	// Decode Message
+	message, n, err := decodeUTF8Str(data[start:])
+	if err != nil {
+		return start, err
+	}
+	w.Message = message
+	start += n
+
+	// Decode QoS and Retain
+	w.QoS = QoS(data[start] & 0b00000011)
+	w.Retain = data[start]&0b00000001 == 0b00000001
+	start++
+
+	// Decode Properties (MQTT 5.0 only)
+	if len(data) > start {
+		w.Properties = new(Properties)
+		n, err := w.Properties.Decode(data[start:])
+		if err != nil {
+			return start, err
+		}
+		start += n
+	}
+
+	return len(data), nil
+}
+
+func (w *Will) Read(r *Reader) error {
+	return nil
+}
+
+func (w *Will) Write(wr *Writer) error {
+	data, err := w.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = wr.Write(data)
+	return err
 }
