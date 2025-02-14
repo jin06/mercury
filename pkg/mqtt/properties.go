@@ -155,47 +155,193 @@ func (p *Properties) Len() uint64 {
 func (p *Properties) Encode() ([]byte, error) {
 	result := []byte{0}
 
+	if p.PayloadFormat != nil {
+		result = append(result, ID_PayloadFormat)
+		result = append(result, *p.PayloadFormat)
+	}
+
+	if p.MessageExpiryInterval != nil {
+		result = append(result, ID_MessageExpiryInterval)
+		result = append(result, encodeUint32(*p.MessageExpiryInterval)...)
+	}
+
+	if p.ContentType != nil {
+		result = append(result, ID_ContentType)
+		encodedContentType, err := encodeUTF8Str(*p.ContentType)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedContentType...)
+	}
+
+	if p.ResponseTopic != nil {
+		result = append(result, ID_ResponseTopic)
+		encodedResponseTopic, err := encodeUTF8Str(*p.ResponseTopic)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedResponseTopic...)
+	}
+
+	if p.CorrelationData != nil {
+		result = append(result, ID_CorrelationData)
+		encodedCorrelationData, err := encodeBinaryData(p.CorrelationData)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedCorrelationData...)
+	}
+
+	if p.SubscriptionIdentifier != nil {
+		result = append(result, ID_SubscriptionIdentifier)
+		encodedSubscriptionIdentifier, err := encodeVariableByteInteger(*p.SubscriptionIdentifier)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedSubscriptionIdentifier...)
+	}
+
 	if p.SessionExpiryInterval != nil {
 		result = append(result, ID_SessionExpiryInterval)
 		result = append(result, encodeUint32(*p.SessionExpiryInterval)...)
 	}
 
-	if p.RequestResponseInformation != nil {
-		result = append(result, ID_RequestResponseInformation, encodeBool(*p.RequestResponseInformation))
+	if p.AssignedClientID != nil {
+		result = append(result, ID_AssignedClientID)
+		encodedAssignedClientID, err := encodeUTF8Str(*p.AssignedClientID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedAssignedClientID...)
 	}
+
+	if p.ServerKeepAlive != nil {
+		result = append(result, ID_ServerKeepAlive)
+		result = append(result, encodeUint16(*p.ServerKeepAlive)...)
+	}
+
+	if p.AuthenticationMethod != nil {
+		result = append(result, ID_AuthenticationMethod)
+		encodedAuthenticationMethod, err := encodeUTF8Str(*p.AuthenticationMethod)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedAuthenticationMethod...)
+	}
+
+	if p.AuthenticationData != nil {
+		result = append(result, ID_AuthenticationData)
+		encodedAuthenticationData, err := encodeBinaryData(p.AuthenticationData)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedAuthenticationData...)
+	}
+
 	if p.RequestProblemInformation != nil {
-		result = append(result, 0x17)
+		result = append(result, ID_RequestProblemInfomation)
 		result = append(result, encodeBool(*p.RequestProblemInformation))
 	}
+
+	if p.WillDelayInterval != nil {
+		result = append(result, ID_WillDelayInterval)
+		result = append(result, encodeUint32(*p.WillDelayInterval)...)
+	}
+
+	if p.RequestResponseInformation != nil {
+		result = append(result, ID_RequestResponseInformation)
+		result = append(result, encodeBool(*p.RequestResponseInformation))
+	}
+
+	if p.ResponseInformation != nil {
+		result = append(result, ID_ResponseInformation)
+		encodedResponseInformation, err := encodeUTF8Str(*p.ResponseInformation)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedResponseInformation...)
+	}
+
+	if p.ServerReference != nil {
+		result = append(result, ID_ServerReference)
+		encodedServerReference, err := encodeUTF8Str(*p.ServerReference)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedServerReference...)
+	}
+
+	if p.ReasonString != nil {
+		result = append(result, ID_ReasonString)
+		encodedReasonString, err := encodeUTF8Str(*p.ReasonString)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, encodedReasonString...)
+	}
+
 	if p.ReceiveMaximum != nil {
-		result = append(result, 0x21)
+		result = append(result, ID_ReceiveMaximum)
 		result = append(result, encodeUint16(*p.ReceiveMaximum)...)
 	}
-	if p.MaximumPacketSize != nil {
-		result = append(result, 0x27)
-		result = append(result, encodeUint32(*p.MaximumPacketSize)...)
-	}
+
 	if p.TopicAliasMaximum != nil {
-		result = append(result, 0x22)
+		result = append(result, ID_TopicAliasMaximum)
 		result = append(result, encodeUint16(*p.TopicAliasMaximum)...)
 	}
-	// todo userPropertis decode and encode
+
+	if p.TopicAlias != nil {
+		result = append(result, ID_TopicAlias)
+		result = append(result, encodeUint16(*p.TopicAlias)...)
+	}
+
+	if p.MaximumQoS != nil {
+		result = append(result, ID_MaximumQoS)
+		result = append(result, byte(*p.MaximumQoS))
+	}
+
+	if p.RetainAvailable != nil {
+		result = append(result, ID_RetainAvailable)
+		result = append(result, encodeBool(*p.RetainAvailable))
+	}
+
 	if p.UserProperties != nil {
 		for _, pro := range p.UserProperties {
 			result = append(result, ID_UserProperties)
-			if buf, err := encodeUTF8Str(pro.Key); err != nil {
+			encodedKey, err := encodeUTF8Str(pro.Key)
+			if err != nil {
 				return nil, err
-			} else {
-				result = append(result, buf...)
 			}
-			if buf, err := encodeUTF8Str(pro.Val); err != nil {
+			result = append(result, encodedKey...)
+			encodedVal, err := encodeUTF8Str(pro.Val)
+			if err != nil {
 				return nil, err
-			} else {
-				result = append(result, buf...)
 			}
+			result = append(result, encodedVal...)
 		}
 	}
-	lengthBytes, err := encodeVariableByteInteger((len(result)))
+
+	if p.MaximumPacketSize != nil {
+		result = append(result, ID_MaximumPacketSize)
+		result = append(result, encodeUint32(*p.MaximumPacketSize)...)
+	}
+
+	if p.WildcardSubscriptionAvailable != nil {
+		result = append(result, ID_WildcardSubscriptionAvailable)
+		result = append(result, encodeBool(*p.WildcardSubscriptionAvailable))
+	}
+
+	if p.SubscriptionIdentifierAvailable != nil {
+		result = append(result, ID_SubscriptionIdentifierAvailable)
+		result = append(result, encodeBool(*p.SubscriptionIdentifierAvailable))
+	}
+
+	if p.SharedSubscriptionAvailable != nil {
+		result = append(result, ID_SharedSubscriptionAvailable)
+		result = append(result, encodeBool(*p.SharedSubscriptionAvailable))
+	}
+
+	lengthBytes, err := encodeVariableByteInteger(len(result))
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +353,6 @@ func (p *Properties) Decode(data []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	// data[n : n+l]
 	for i := n; i < total; {
 		identifier := data[i]
 		i++
@@ -221,32 +366,32 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			if p.MessageExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
 				return i + total, err
 			}
-			i = i + 4
+			i += 4
 		case ID_ContentType:
 			if p.ContentType, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
 			}
-			i = i + vl
+			i += vl
 		case ID_ResponseTopic:
 			if p.ResponseTopic, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
 			}
-			i = i + vl
+			i += vl
 		case ID_CorrelationData:
 			if p.CorrelationData, vl, err = decodeBinaryData(data[i:]); err != nil {
 				return i + total, err
 			}
-			i = i + vl
+			i += vl
 		case ID_SubscriptionIdentifier:
 			if p.SubscriptionIdentifier, vl, err = decodeVariableByteIntegerPtr(data[i:]); err != nil {
 				return i + total, err
 			}
-			i = i + vl
+			i += vl
 		case ID_SessionExpiryInterval:
 			if p.SessionExpiryInterval, err = decodeUint32Ptr(data[i : i+4]); err != nil {
 				return i + total, err
 			}
-			i = i + 4
+			i += 4
 		case ID_AssignedClientID:
 			if p.AssignedClientID, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
@@ -286,7 +431,7 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			if p.ResponseInformation, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
 			}
-			i = i + vl
+			i += vl
 		case ID_ServerReference:
 			if p.ServerReference, vl, err = decodeUTF8Ptr(data[i:]); err != nil {
 				return i + total, err
@@ -301,12 +446,12 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			if p.ReceiveMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
 				return i + total, err
 			}
-			i = i + 2
+			i += 2
 		case ID_TopicAliasMaximum:
 			if p.TopicAliasMaximum, err = decodeUint16Ptr(data[i : i+2]); err != nil {
 				return i + total, err
 			}
-			i = i + 2
+			i += 2
 		case ID_TopicAlias:
 			if p.TopicAlias, err = decodeUint16Ptr(data[i : i+2]); err != nil {
 				return i + total, err
@@ -331,7 +476,7 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			if p.MaximumPacketSize, err = decodeUint32Ptr(data[i : i+4]); err != nil {
 				return i + total, err
 			}
-			i = i + 4
+			i += 4
 		case ID_WildcardSubscriptionAvailable:
 			if p.WildcardSubscriptionAvailable, err = decodeBoolPtr(data[i]); err != nil {
 				return i + total, err
