@@ -39,13 +39,21 @@ func (d *Disconnect) EncodeBody() ([]byte, error) {
 }
 
 func (d *Disconnect) ReadBody(r *Reader) error {
-	// ... implementation ...
-	return nil
+	data, err := r.Read(d.FixedHeader.RemainingLength)
+	if err != nil {
+		return err
+	}
+	_, err = d.Decode(data)
+	return err
 }
 
 func (d *Disconnect) Write(w *Writer) error {
-	// ... implementation ...
-	return nil
+	data, err := d.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
 }
 
 func (d *Disconnect) WriteBody(w *Writer) error {
@@ -73,6 +81,25 @@ func (d *Disconnect) String() string {
 }
 
 func (d *Disconnect) DecodeBody(data []byte) (int, error) {
-	// Disconnect packet has no body, so just return 0 and nil
-	return 0, nil
+	var start int
+
+	// Decode Reason Code (MQTT 5.0 only)
+	if d.Version == MQTT5 {
+		if len(data) > start {
+			d.ResionCode = ReasonCode(data[start])
+			start++
+		}
+
+		// Decode Properties (MQTT 5.0 only)
+		if len(data) > start {
+			d.Properties = new(Properties)
+			n, err := d.Properties.Decode(data[start:])
+			if err != nil {
+				return start, err
+			}
+			start += n
+		}
+	}
+
+	return len(data), nil
 }
