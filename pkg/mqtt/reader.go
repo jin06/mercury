@@ -46,7 +46,7 @@ func (r *Reader) ReadPacket() (Packet, error) {
 	case PUBREC:
 		packet = NewPubrec(header)
 	case PUBREL:
-		packet = NewPubrecl(header)
+		packet = NewPubrel(header)
 	case PUBCOMP:
 		packet = NewPubcomp(header)
 	case SUBSCRIBE:

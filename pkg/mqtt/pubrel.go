@@ -1,6 +1,6 @@
 package mqtt
 
-func NewPubrecl(header *FixedHeader) *Pubrel {
+func NewPubrel(header *FixedHeader) *Pubrel {
 	return &Pubrel{FixedHeader: header}
 }
 
