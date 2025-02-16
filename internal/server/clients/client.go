@@ -32,6 +32,7 @@ func (c *Client) Run(ctx context.Context) (err error) {
 		p, err := mqtt.ReadPacket(c.reader)
 		if err != nil {
 			logs.Logger.Err(err)
+			// return err
 			// panic(err)
 		}
 		logs.Logger.Info().Msgf("%v", p)

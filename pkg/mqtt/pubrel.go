@@ -1,10 +1,10 @@
 package mqtt
 
-func NewPubrecl(header *FixedHeader) *Pubrecl {
-	return &Pubrecl{FixedHeader: header}
+func NewPubrecl(header *FixedHeader) *Pubrel {
+	return &Pubrel{FixedHeader: header}
 }
 
-type Pubrecl struct {
+type Pubrel struct {
 	*FixedHeader
 	Version    ProtocolVersion
 	PacketID   PacketID
@@ -13,7 +13,7 @@ type Pubrecl struct {
 	Properties *Properties
 }
 
-func (p *Pubrecl) Encode() ([]byte, error) {
+func (p *Pubrel) Encode() ([]byte, error) {
 	body, err := p.EncodeBody()
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func (p *Pubrecl) Encode() ([]byte, error) {
 	return append(header, body...), nil
 }
 
-func (p *Pubrecl) Decode(data []byte) (int, error) {
+func (p *Pubrel) Decode(data []byte) (int, error) {
 	n, err := p.FixedHeader.Decode(data)
 	if err != nil {
 		return 0, err
@@ -35,7 +35,7 @@ func (p *Pubrecl) Decode(data []byte) (int, error) {
 	return bodyLen + n, err
 }
 
-func (p *Pubrecl) DecodeBody(data []byte) (int, error) {
+func (p *Pubrel) DecodeBody(data []byte) (int, error) {
 	var start int
 
 	// Decode Packet ID
@@ -61,7 +61,7 @@ func (p *Pubrecl) DecodeBody(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (p *Pubrecl) ReadBody(r *Reader) error {
+func (p *Pubrel) ReadBody(r *Reader) error {
 	data, err := r.Read(p.FixedHeader.RemainingLength)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (p *Pubrecl) ReadBody(r *Reader) error {
 	return err
 }
 
-func (p *Pubrecl) Write(w *Writer) error {
+func (p *Pubrel) Write(w *Writer) error {
 	data, err := p.Encode()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (p *Pubrecl) Write(w *Writer) error {
 	return err
 }
 
-func (p *Pubrecl) EncodeBody() ([]byte, error) {
+func (p *Pubrel) EncodeBody() ([]byte, error) {
 	var data []byte
 
 	// Encode Packet ID
@@ -97,7 +97,7 @@ func (p *Pubrecl) EncodeBody() ([]byte, error) {
 	return data, nil
 }
 
-func (p *Pubrecl) WriteBody(w *Writer) error {
+func (p *Pubrel) WriteBody(w *Writer) error {
 	data, err := p.EncodeBody()
 	if err != nil {
 		return err
@@ -106,11 +106,11 @@ func (p *Pubrecl) WriteBody(w *Writer) error {
 	return err
 }
 
-func (p *Pubrecl) PacketType() PacketType {
+func (p *Pubrel) PacketType() PacketType {
 	return PUBREL
 }
 
-func (p *Pubrecl) RemainingLength() int {
+func (p *Pubrel) RemainingLength() int {
 	length := 2 // Packet ID length
 	if p.Version == MQTT5 && p.Properties != nil {
 		propertiesLength, _ := p.Properties.Encode()
@@ -119,6 +119,6 @@ func (p *Pubrecl) RemainingLength() int {
 	return length
 }
 
-func (p *Pubrecl) String() string {
+func (p *Pubrel) String() string {
 	return "Pubrecl Packet"
 }
