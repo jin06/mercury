@@ -17,12 +17,14 @@ func NewBroker() *Broker {
 		Server:  server.NewServer(),
 		closing: make(chan struct{}),
 		closed:  make(chan struct{}),
+		options: &Options{},
 	}
 	return b
 }
 
 type Broker struct {
 	Server    server.Server
+	options   *Options
 	closeOnce sync.Once
 	closing   chan struct{}
 	closed    chan struct{}
