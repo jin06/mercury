@@ -1,23 +1,21 @@
-package server
+package clients
 
 import (
 	"sync"
-
-	"github.com/jin06/mercury/internal/server/clients"
 )
 
 func NewManager() *Manager {
 	return &Manager{
-		clients: map[string]*clients.Client{},
+		clients: map[string]*Client{},
 	}
 }
 
 type Manager struct {
-	clients map[string]*clients.Client
+	clients map[string]*Client
 	mu      sync.Mutex
 }
 
-func (m *Manager) Set(c *clients.Client) {
+func (m *Manager) Set(c *Client) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.clients[c.ID] != nil {
@@ -32,13 +30,13 @@ func (m *Manager) Remove(id string) {
 	delete(m.clients, id)
 }
 
-func (m *Manager) Get(id string) *clients.Client {
+func (m *Manager) Get(id string) *Client {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.clients[id]
 }
 
-func (m *Manager) All() map[string]*clients.Client {
+func (m *Manager) All() map[string]*Client {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.clients
@@ -50,7 +48,7 @@ func (m *Manager) Len() int {
 	return len(m.clients)
 }
 
-func (m *Manager) Iterator(f func(c *clients.Client)) {
+func (m *Manager) Iterator(f func(c *Client)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, c := range m.clients {

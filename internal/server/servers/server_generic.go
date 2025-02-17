@@ -1,4 +1,4 @@
-package server
+package servers
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func newGeneric() *generic {
+func NewGeneric() *generic {
 	return &generic{
-		manager: NewManager(),
+		manager: clients.NewManager(),
 	}
 }
 
 type generic struct {
-	manager *Manager
+	manager *clients.Manager
 }
 
 func (g *generic) Run(ctx context.Context) error {

@@ -1,16 +1,11 @@
 package server
 
 import (
-	"context"
-
 	"github.com/jin06/mercury/internal/server/clients"
+	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 type Server interface {
-	Run(context.Context) error
 	Reg(*clients.Client) error
-}
-
-func NewServer() Server {
-	return newGeneric()
+	HandleConnect(packet *mqtt.Connect) error
 }

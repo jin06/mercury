@@ -10,11 +10,12 @@ import (
 	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/clients"
+	"github.com/jin06/mercury/internal/server/servers"
 )
 
 func NewBroker() *Broker {
 	b := &Broker{
-		Server:  server.NewServer(),
+		Server:  servers.NewServer(),
 		closing: make(chan struct{}),
 		closed:  make(chan struct{}),
 		options: &Options{},
@@ -68,7 +69,11 @@ func (b *Broker) listenTCP(ctx context.Context, addr string) error {
 			panic(err)
 		}
 		client := clients.NewClient(b.Server, conn)
-		go client.Run(ctx)
+		go func() {
+			if err := client.Run(ctx); err != nil {
+				log.Error().Err(err).Msg("client run error")
+			}
+		}()
 	}
 }
 
