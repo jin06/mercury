@@ -3,14 +3,16 @@ package clients
 import (
 	"context"
 	"net"
+	"sync"
 
+	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/logs"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewClient(handler Handler, conn net.Conn) *Client {
-	c := Client{
+func NewClient(handler server.Server, conn net.Conn) *generic {
+	c := generic{
 		handler:   handler,
 		Conn:      conn,
 		connected: make(chan struct{}),
@@ -23,19 +25,24 @@ func NewClient(handler Handler, conn net.Conn) *Client {
 	return &c
 }
 
-type Client struct {
+type generic struct {
 	ID        string
 	Conn      net.Conn
-	handler   Handler
+	handler   server.Server
 	reader    *mqtt.Reader
 	writer    *mqtt.Writer
 	options   Options
 	connected chan struct{}
 	closing   chan struct{}
 	closed    chan struct{}
+	closeOnce sync.Once
 }
 
-func (c *Client) Run(ctx context.Context) (err error) {
+func (c *generic) ClientID() string {
+	return c.ID
+}
+
+func (c *generic) Run(ctx context.Context) (err error) {
 	c.handler.Reg(c)
 	p, err := mqtt.ReadPacket(c.reader)
 	if err != nil {
@@ -56,7 +63,7 @@ func (c *Client) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *Client) runloop(ctx context.Context) {
+func (c *generic) runloop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -65,7 +72,7 @@ func (c *Client) runloop(ctx context.Context) {
 	}
 }
 
-func (c *Client) HandlePacket(p mqtt.Packet) {
+func (c *generic) HandlePacket(p mqtt.Packet) {
 	var response mqtt.Packet
 
 	switch p.(type) {
@@ -83,17 +90,25 @@ func (c *Client) HandlePacket(p mqtt.Packet) {
 	response.Write(c.writer)
 }
 
-func (c *Client) connect() {
+func (c *generic) connect() {
 }
 
-func (c *Client) Connect() {
-
-}
-
-func (c *Client) ReadStream() {
+func (c *generic) Connect() {
 
 }
 
-func (c *Client) WriteStream() {
+func (c *generic) ReadStream() {
 
+}
+
+func (c *generic) WriteStream() {
+
+}
+
+func (c *generic) Close(ctx context.Context) error {
+	var err error
+	c.closeOnce.Do(func() {
+		close(c.closing)
+	})
+	return err
 }

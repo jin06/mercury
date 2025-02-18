@@ -4,25 +4,25 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jin06/mercury/internal/server/clients"
+	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 func NewGeneric() *generic {
 	return &generic{
-		manager: clients.NewManager(),
+		manager: server.NewManager(),
 	}
 }
 
 type generic struct {
-	manager *clients.Manager
+	manager *server.Manager
 }
 
 func (g *generic) Run(ctx context.Context) error {
 	select {}
 }
 
-func (g *generic) Reg(c *clients.Client) error {
+func (g *generic) Reg(c server.Client) error {
 	if c == nil {
 		return errors.New("client is nil")
 	}
