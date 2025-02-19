@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/jin06/mercury/internal/logs"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
@@ -117,7 +116,7 @@ func (c *generic) writeloop(ctx context.Context) error {
 			return nil
 		case p := <-c.output:
 			if err := c.Write(*p); err != nil {
-				logs.Logger.Err(err)
+				utils.Logger.Err(err)
 				return err
 			}
 		}

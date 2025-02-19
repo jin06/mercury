@@ -1,7 +1,6 @@
-package logs
+package utils
 
 import (
-	// "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 

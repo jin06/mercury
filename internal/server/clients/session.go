@@ -1,4 +1,4 @@
-package session
+package clients
 
 import (
 	"time"
@@ -7,7 +7,6 @@ import (
 )
 
 type Session struct {
-	// ClientID
 	ClinetID      string `json:"client_id"`
 	ConnectedTime time.Time
 	MQTTVersion   mqtt.ProtocolVersion
