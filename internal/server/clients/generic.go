@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -58,8 +59,6 @@ func (c *generic) Run(ctx context.Context) (err error) {
 
 	defer close(c.closed)
 
-	c.handler.Reg(c)
-
 	var p mqtt.Packet
 
 	if p, err = c.ReadPacket(); err != nil {
@@ -67,6 +66,7 @@ func (c *generic) Run(ctx context.Context) (err error) {
 	}
 
 	if packet, ok := p.(*mqtt.Connect); ok {
+		fmt.Println(packet)
 		if err = c.handler.HandleConnect(packet); err != nil {
 			return
 		}
