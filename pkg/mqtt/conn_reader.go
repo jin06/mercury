@@ -3,18 +3,17 @@ package mqtt
 import (
 	"bufio"
 	"io"
-	"net"
 )
 
-func NewReader(c net.Conn) *Reader {
+func newReader(c io.Reader) *Reader {
 	return &Reader{
-		conn:   c,
+		raw:    c,
 		Reader: bufio.NewReader(c),
 	}
 }
 
 type Reader struct {
-	conn net.Conn
+	raw io.Reader
 	*bufio.Reader
 }
 

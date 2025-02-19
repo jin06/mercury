@@ -9,26 +9,25 @@ import (
 
 	"github.com/jin06/mercury/internal/logs"
 	"github.com/jin06/mercury/internal/server"
-	"github.com/jin06/mercury/internal/server/connections"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 func NewClient(handler server.Server, conn net.Conn) *generic {
 	c := generic{
-		handler:   handler,
-		conn:      connections.NewTCP(conn),
-		connected: make(chan struct{}),
-		stopping:  make(chan struct{}),
-		closed:    make(chan struct{}),
-		options:   Options{},
+		handler:    handler,
+		Connection: mqtt.NewConnection(conn),
+		connected:  make(chan struct{}),
+		stopping:   make(chan struct{}),
+		closed:     make(chan struct{}),
+		options:    Options{},
 	}
 	return &c
 }
 
 type generic struct {
-	id        string
-	conn      connections.Connection
+	id string
+	*mqtt.Connection
 	handler   server.Server
 	options   Options
 	connected chan struct{}
@@ -63,7 +62,7 @@ func (c *generic) Run(ctx context.Context) (err error) {
 
 	var p mqtt.Packet
 
-	if p, err = c.conn.Read(); err != nil {
+	if p, err = c.ReadPacket(); err != nil {
 		return err
 	}
 
@@ -100,7 +99,7 @@ func (c *generic) readloop(ctx context.Context) error {
 		case <-c.stopping:
 			return nil
 		default:
-			p, err := c.conn.Read()
+			p, err := c.ReadPacket()
 			if err != nil {
 				return err
 			}
@@ -159,8 +158,8 @@ func (c *generic) stop(err error) {
 func (c *generic) Close(ctx context.Context) (err error) {
 	if c.err != nil {
 	}
-	if c.conn != nil {
-		err = c.conn.Close()
+	if c.Connection != nil {
+		err = c.Connection.Close()
 	}
 	return
 }

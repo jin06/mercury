@@ -2,43 +2,43 @@ package mqtt
 
 import (
 	"bufio"
-	"net"
+	"io"
 )
 
-func NewWriter(c net.Conn) *Writer {
+func newWriter(c io.Writer) *Writer {
 	return &Writer{
-		conn:   c,
+		raw:    c,
 		Writer: bufio.NewWriter(c),
 	}
 }
 
 type Writer struct {
-	conn net.Conn
+	raw io.Writer
 	*bufio.Writer
 }
 
 func (w *Writer) Write(data []byte) (int, error) {
-	return w.conn.Write(data)
+	return w.Writer.Write(data)
 }
 
 func (w *Writer) WriteBool(b bool) (int, error) {
-	return w.conn.Write([]byte{encodeBool(b)})
+	return w.Writer.Write([]byte{encodeBool(b)})
 }
 
 func (w *Writer) WriteUint8(u uint8) (int, error) {
-	return w.conn.Write([]byte{byte(u)})
+	return w.Writer.Write([]byte{byte(u)})
 }
 
 func (w *Writer) WriteUint16(u uint16) (int, error) {
-	return w.conn.Write(encodeUint16(u))
+	return w.Writer.Write(encodeUint16(u))
 }
 
 func (w *Writer) WriteUint32(u uint32) (int, error) {
-	return w.conn.Write(encodeUint32(u))
+	return w.Writer.Write(encodeUint32(u))
 }
 
 func (w *Writer) WriteUint64(u uint64) (int, error) {
-	return w.conn.Write(encodeUint64(u))
+	return w.Writer.Write(encodeUint64(u))
 }
 
 func (w *Writer) WriteUTF8Str(str string) (int, error) {
@@ -46,7 +46,7 @@ func (w *Writer) WriteUTF8Str(str string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return w.conn.Write(data)
+	return w.Writer.Write(data)
 }
 
 func (w *Writer) WriteVariableByteInteger(l int) (int, error) {
@@ -54,5 +54,5 @@ func (w *Writer) WriteVariableByteInteger(l int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return w.conn.Write(data)
+	return w.Writer.Write(data)
 }
