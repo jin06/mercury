@@ -8,7 +8,7 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewGeneric() *generic {
+func newGeneric() *generic {
 	return &generic{
 		manager: server.NewManager(),
 	}

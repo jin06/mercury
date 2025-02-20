@@ -17,6 +17,15 @@ type Writer struct {
 	*bufio.Writer
 }
 
+func (w *Writer) WritePacket(p Packet) error {
+	data, err := p.Encode()
+	if err != nil {
+		return err
+	}
+	_, err = w.Writer.Write(data)
+	return err
+}
+
 func (w *Writer) Write(data []byte) (int, error) {
 	return w.Writer.Write(data)
 }
