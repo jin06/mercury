@@ -30,8 +30,19 @@ func (g *generic) Reg(c server.Client) error {
 	return nil
 }
 
-func (g *generic) HandleConnect(p *mqtt.Connect) error {
-	panic("implement me")
+func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error) {
+	switch p := packet.(type) {
+	case *mqtt.Connect:
+		return g.handleConnect(p)
+	case *mqtt.Pingreq:
+	case *mqtt.Subscribe:
+	case *mqtt.Disconnect:
+	}
+	return
+}
+
+func (g *generic) handleConnect(p *mqtt.Connect) (response mqtt.Packet, err error) {
+	return
 }
 
 func (g *generic) HandleConnack(p *mqtt.Connack) error {

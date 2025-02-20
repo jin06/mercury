@@ -5,5 +5,6 @@ import (
 )
 
 type Server interface {
-	HandleConnect(packet *mqtt.Connect) error
+	Reg(client Client) error
+	HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error)
 }

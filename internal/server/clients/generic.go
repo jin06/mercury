@@ -2,7 +2,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -17,7 +16,6 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 	c := generic{
 		handler:    handler,
 		Connection: mqtt.NewConnection(conn),
-		connected:  make(chan struct{}),
 		stopping:   make(chan struct{}),
 		closed:     make(chan struct{}),
 		options:    Options{},
@@ -31,8 +29,8 @@ type generic struct {
 	id string
 	*mqtt.Connection
 	handler   server.Server
+	connected bool
 	options   Options
-	connected chan struct{}
 	stopping  chan struct{}
 	stopOnce  sync.Once
 	closed    chan struct{}
@@ -48,31 +46,42 @@ func (c *generic) ClientID() string {
 
 func (c *generic) Run(ctx context.Context) (err error) {
 	defer close(c.closed)
-	defer func() {
-		if err != nil {
-			c.setError(err)
-			c.stop(err)
-		}
-		c.Close(ctx)
-	}()
+	defer c.Close(ctx)
+	defer c.stop(err)
 
+	if err = c.connect(ctx); err != nil {
+		return
+	}
+
+	if err = c.runloop(ctx); err != nil {
+		return
+	}
+	return
+}
+
+func (c *generic) connect(ctx context.Context) (err error) {
 	var p mqtt.Packet
+	var response mqtt.Packet
 
 	if p, err = c.ReadPacket(); err != nil {
-		return err
+		return
 	}
 
-	if packet, ok := p.(*mqtt.Connect); ok {
-		fmt.Println(packet)
-		if err = c.handler.HandleConnect(packet); err != nil {
-			return
-		}
-	} else {
-		return utils.ErrNotConnectPacket
+	if _, ok := p.(*mqtt.Connect); !ok {
+		return utils.ErrMalformedPacket
 	}
-	if err = c.runloop(ctx); err != nil {
-		return err
+
+	if response, err = c.handler.HandlePacket(p); err != nil {
+		return
 	}
+
+	if err = c.Write(response); err != nil {
+		return
+	}
+	if err = c.handler.Reg(c); err != nil {
+		return
+	}
+	c.connected = true
 	return nil
 }
 
@@ -168,6 +177,9 @@ func (c *generic) stop(err error) {
 }
 
 func (c *generic) Close(ctx context.Context) (err error) {
+	if c.connected {
+
+	}
 	if c.err != nil {
 	}
 	if c.Connection != nil {
