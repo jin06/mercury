@@ -5,6 +5,7 @@ import (
 )
 
 type Server interface {
-	Reg(client Client) error
+	Register(client Client) error
+	Deregister(client Client) error
 	HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error)
 }

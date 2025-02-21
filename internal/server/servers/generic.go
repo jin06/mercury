@@ -22,12 +22,16 @@ func (g *generic) Run(ctx context.Context) error {
 	select {}
 }
 
-func (g *generic) Reg(c server.Client) error {
+func (g *generic) Register(c server.Client) error {
 	if c == nil {
 		return errors.New("client is nil")
 	}
 	g.manager.Set(c)
 	return nil
+}
+
+func (g *generic) Deregister(c server.Client) error {
+
 }
 
 func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error) {

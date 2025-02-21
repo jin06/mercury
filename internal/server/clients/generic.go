@@ -49,7 +49,7 @@ func (c *generic) Run(ctx context.Context) (err error) {
 	defer c.Close(ctx)
 	defer c.stop(err)
 
-	if err = c.connect(ctx); err != nil {
+	if err = c.connect(); err != nil {
 		return
 	}
 
@@ -59,7 +59,7 @@ func (c *generic) Run(ctx context.Context) (err error) {
 	return
 }
 
-func (c *generic) connect(ctx context.Context) (err error) {
+func (c *generic) connect() (err error) {
 	var p mqtt.Packet
 	var response mqtt.Packet
 
@@ -78,7 +78,7 @@ func (c *generic) connect(ctx context.Context) (err error) {
 	if err = c.Write(response); err != nil {
 		return
 	}
-	if err = c.handler.Reg(c); err != nil {
+	if err = c.handler.Register(c); err != nil {
 		return
 	}
 	c.connected = true
