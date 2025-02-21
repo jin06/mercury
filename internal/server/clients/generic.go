@@ -109,7 +109,7 @@ func (c *generic) runloop(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := c.readLoop(ctx); err != nil {
+		if err := c.inputLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
@@ -117,7 +117,15 @@ func (c *generic) runloop(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := c.writeLoop(ctx); err != nil {
+		if err := c.outputLoop(ctx); err != nil {
+			c.stop(err)
+			return
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := c.handleLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
@@ -134,7 +142,7 @@ func (c *generic) runloop(ctx context.Context) error {
 	return nil
 }
 
-func (c *generic) readLoop(ctx context.Context) error {
+func (c *generic) inputLoop(ctx context.Context) error {
 	for {
 		p, err := c.ReadPacket()
 		if err != nil {
@@ -150,7 +158,7 @@ func (c *generic) readLoop(ctx context.Context) error {
 	}
 }
 
-func (c *generic) writeLoop(ctx context.Context) error {
+func (c *generic) outputLoop(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -163,6 +171,32 @@ func (c *generic) writeLoop(ctx context.Context) error {
 			}
 			if err := c.WritePacket(p); err != nil {
 				return err
+			}
+		}
+	}
+}
+
+func (c *generic) handleLoop(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+		case <-c.stopping:
+		case p, ok := <-c.input:
+			if !ok {
+				return nil
+			}
+			switch val := p.(type) {
+			case *mqtt.Pingreq:
+				// c.handler.HandlePacket(val)
+			case *mqtt.Publish:
+				c.handler.HandlePacket(val)
+			case *mqtt.Pubrec:
+			case *mqtt.Pubrel:
+			case *mqtt.Pubcomp:
+			case *mqtt.Subscribe:
+			case *mqtt.Unsubscribe:
+			case *mqtt.Disconnect:
+			case *mqtt.Auth:
 			}
 		}
 	}

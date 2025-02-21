@@ -43,6 +43,7 @@ func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err er
 	case *mqtt.Connect:
 		return g.handleConnect(p)
 	case *mqtt.Pingreq:
+		return nil, nil
 	case *mqtt.Subscribe:
 	case *mqtt.Disconnect:
 	}
