@@ -30,6 +30,17 @@ func (m *Manager) Remove(id string) {
 	delete(m.clients, id)
 }
 
+func (m *Manager) RemoveClient(c Client) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.clients[c.ClientID()]; ok {
+		if m.clients[c.ClientID()].UUID() != c.UUID() {
+			delete(m.clients, c.ClientID())
+		}
+	}
+	return
+}
+
 func (m *Manager) Get(id string) Client {
 	m.mu.Lock()
 	defer m.mu.Unlock()

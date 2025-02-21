@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/google/uuid"
@@ -23,6 +24,7 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 		input:      make(chan mqtt.Packet, 2000),
 		output:     make(chan mqtt.Packet, 2000),
 		uuid:       uuid.New().String(),
+		keep:       time.Now(),
 	}
 	return &c
 }
@@ -42,6 +44,7 @@ type generic struct {
 	input  chan mqtt.Packet
 	output chan mqtt.Packet
 	uuid   string
+	keep   time.Time
 }
 
 func (c *generic) ClientID() string {
@@ -64,6 +67,7 @@ func (c *generic) Run(ctx context.Context) (err error) {
 	if err = c.runloop(ctx); err != nil {
 		return
 	}
+
 	return
 }
 
@@ -114,16 +118,18 @@ func (c *generic) runloop(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		if err := c.writeLoop(ctx); err != nil {
-			c.setError(err)
+			c.stop(err)
 			return
 		}
 	}()
-	select {
-	case <-ctx.Done():
-		break
-	case <-c.stopping:
-		break
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := c.keepLoop(ctx); err != nil {
+			c.stop(err)
+			return
+		}
+	}()
 	wg.Done()
 	return nil
 }
@@ -189,6 +195,29 @@ func (c *generic) stop(err error) {
 		c.setError(err)
 		close(c.stopping)
 	})
+}
+
+func (c *generic) keepLoop(ctx context.Context) error {
+	// ticker := time.NewTicker(time.Minute)
+	ch := make(chan time.Time, 1)
+	defer close(ch)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-c.stopping:
+			return nil
+		case <-ch:
+			duration := time.Since(c.keep)
+			if duration > time.Hour {
+				panic("keep alive")
+			}
+		}
+	}
+}
+
+func (c *generic) keepalive() {
+	c.keep = time.Now()
 }
 
 func (c *generic) Close(ctx context.Context) (err error) {

@@ -31,7 +31,11 @@ func (g *generic) Register(c server.Client) error {
 }
 
 func (g *generic) Deregister(c server.Client) error {
-
+	if c == nil {
+		return errors.New("client is nil")
+	}
+	g.manager.RemoveClient(c)
+	return nil
 }
 
 func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error) {
