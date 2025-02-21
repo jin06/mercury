@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/google/uuid"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
@@ -21,6 +22,7 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 		options:    Options{},
 		input:      make(chan mqtt.Packet, 2000),
 		output:     make(chan mqtt.Packet, 2000),
+		uuid:       uuid.New().String(),
 	}
 	return &c
 }
@@ -34,14 +36,20 @@ type generic struct {
 	stopping  chan struct{}
 	stopOnce  sync.Once
 	closed    chan struct{}
+	disOnce   sync.Once
 	err       error // first error that occurs exits the client
 	// packet channels
 	input  chan mqtt.Packet
 	output chan mqtt.Packet
+	uuid   string
 }
 
 func (c *generic) ClientID() string {
 	return c.id
+}
+
+func (c *generic) UUID() string {
+	return c.uuid
 }
 
 func (c *generic) Run(ctx context.Context) (err error) {
@@ -85,13 +93,20 @@ func (c *generic) connect() (err error) {
 	return nil
 }
 
+func (c *generic) disconnect(p *mqtt.Disconnect) (err error) {
+	c.disOnce.Do(func() {
+		c.Write(p)
+	})
+	return
+}
+
 func (c *generic) runloop(ctx context.Context) error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if err := c.readLoop(ctx); err != nil {
-			c.setError(err)
+			c.stop(err)
 			return
 		}
 	}()
@@ -178,12 +193,13 @@ func (c *generic) stop(err error) {
 
 func (c *generic) Close(ctx context.Context) (err error) {
 	if c.connected {
-
-	}
-	if c.err != nil {
+		if c.err != nil {
+			c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}))
+		}
 	}
 	if c.Connection != nil {
 		err = c.Connection.Close()
 	}
+	c.handler.Deregister(c)
 	return
 }
