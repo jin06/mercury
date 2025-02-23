@@ -38,7 +38,7 @@ func (g *generic) Deregister(c server.Client) error {
 	return nil
 }
 
-func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error) {
+func (g *generic) HandlePacket(packet mqtt.Packet) (resp mqtt.Packet, err error) {
 	switch p := packet.(type) {
 	case *mqtt.Connect:
 		return g.handleConnect(p)
@@ -50,7 +50,8 @@ func (g *generic) HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err er
 	return
 }
 
-func (g *generic) handleConnect(p *mqtt.Connect) (response mqtt.Packet, err error) {
+func (g *generic) handleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error) {
+	resp = p.Response()
 	return
 }
 

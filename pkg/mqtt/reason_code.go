@@ -20,15 +20,17 @@ func (e *Error) Code() ReasonCode {
 // )
 
 var (
-	V3_CONNACK_ACCEPT                ReasonCode = 0x00
-	V3_CONNACK_UNACCEPTABLE_VERSION  ReasonCode = 0x01
-	V3_CONNACK_INDENTIFIER_REJECT    ReasonCode = 0x02
-	V3_CONNACK_SERVER_UNAVAILABLE    ReasonCode = 0x03
-	V3_CONNACK_BAD_USERNAME_PASSWORD ReasonCode = 0x04
-	V3_CONNACK_NOT_AUTHORIZED        ReasonCode = 0x05
+	// v3,v4
+	RET_CONNACK_ACCEPT                ReasonCode = 0x00
+	RET_CONNACK_UNACCEPTABLE_VERSION  ReasonCode = 0x01
+	RET_CONNACK_INDENTIFIER_REJECT    ReasonCode = 0x02
+	RET_CONNACK_SERVER_UNAVAILABLE    ReasonCode = 0x03
+	RET_CONNACK_BAD_USERNAME_PASSWORD ReasonCode = 0x04
+	RET_CONNACK_NOT_AUTHORIZED        ReasonCode = 0x05
 )
 
 var (
+	// v5
 	V5_SUCCESS                                ReasonCode = 0x00
 	V5_Normal_Disconnection                   ReasonCode = 0x00
 	Err_V5_Normal_Disconnection                          = Error{code: V5_Normal_Disconnection, msg: "Normal disconnection"}

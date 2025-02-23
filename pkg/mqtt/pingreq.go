@@ -8,6 +8,16 @@ type Pingreq struct {
 	*FixedHeader
 }
 
+func (p *Pingreq) Response() *Pingresp {
+	return &Pingresp{
+		FixedHeader: &FixedHeader{
+			PacketType:      PINGRESP,
+			Flags:           0,
+			RemainingLength: 0,
+		},
+	}
+}
+
 func (p *Pingreq) Encode() (result []byte, err error) {
 	result = toHeader(PINGREQ)
 	return

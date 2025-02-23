@@ -153,6 +153,9 @@ func (p *Properties) Len() uint64 {
 }
 
 func (p *Properties) Encode() ([]byte, error) {
+	if p == nil {
+		return nil, nil
+	}
 	result := []byte{0}
 
 	if p.PayloadFormat != nil {

@@ -178,6 +178,8 @@ func (c *generic) outputLoop(ctx context.Context) error {
 
 func (c *generic) handleLoop(ctx context.Context) error {
 	for {
+		var resp mqtt.Packet
+		var err error
 		select {
 		case <-ctx.Done():
 		case <-c.stopping:
@@ -187,9 +189,9 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			}
 			switch val := p.(type) {
 			case *mqtt.Pingreq:
-				// c.handler.HandlePacket(val)
+				resp = mqtt.NewDefault()
 			case *mqtt.Publish:
-				c.handler.HandlePacket(val)
+				resp, err = c.handler.HandlePacket(val)
 			case *mqtt.Pubrec:
 			case *mqtt.Pubrel:
 			case *mqtt.Pubcomp:
@@ -198,6 +200,12 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			case *mqtt.Disconnect:
 			case *mqtt.Auth:
 			}
+		}
+		if err != nil {
+			c.keepalive()
+		}
+		if resp != nil {
+			c.Write(resp)
 		}
 	}
 }

@@ -4,6 +4,16 @@ func NewPingresp(header *FixedHeader) *Pingresp {
 	return &Pingresp{FixedHeader: header}
 }
 
+func NewDefault() *Pingresp {
+	return &Pingresp{
+		FixedHeader: &FixedHeader{
+			PacketType:      PINGRESP,
+			Flags:           0,
+			RemainingLength: 0,
+		},
+	}
+}
+
 type Pingresp struct {
 	*FixedHeader
 	Version ProtocolVersion

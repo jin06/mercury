@@ -9,8 +9,9 @@ type Connack struct {
 	FixHeader *FixedHeader
 	// FixHeader *FixedHeader
 
-	ReasonCode     ReasonCode
-	Properties     *Properties
+	ReasonCode ReasonCode
+	Properties *Properties
+	// SessionPresent The Session Present flag informs the Client whether the Server is using Session State from a previous connection for this ClientID.
 	SessionPresent bool
 }
 

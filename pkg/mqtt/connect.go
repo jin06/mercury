@@ -21,6 +21,24 @@ type Connect struct {
 	Properties   *Properties
 }
 
+func (c *Connect) Response() *Connack {
+	resp := &Connack{
+		Version: c.Version,
+		FixHeader: &FixedHeader{
+			PacketType: CONNACK,
+		},
+	}
+
+	switch resp.Version {
+	case MQTT3, MQTT4:
+		resp.ReasonCode = RET_CONNACK_ACCEPT
+	case MQTT5:
+		resp.ReasonCode = V5_SUCCESS
+	}
+
+	return resp
+}
+
 func (c *Connect) Encode() ([]byte, error) {
 	body, err := c.EncodeBody()
 	if err != nil {
