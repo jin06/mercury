@@ -4,24 +4,13 @@ func NewPingresp(header *FixedHeader) *Pingresp {
 	return &Pingresp{FixedHeader: header}
 }
 
-func NewDefault() *Pingresp {
-	return &Pingresp{
-		FixedHeader: &FixedHeader{
-			PacketType:      PINGRESP,
-			Flags:           0,
-			RemainingLength: 0,
-		},
-	}
-}
-
 type Pingresp struct {
 	*FixedHeader
-	Version ProtocolVersion
 }
 
 func (p *Pingresp) Encode() ([]byte, error) {
-	result := toHeader(PINGRESP)
-	return result, nil
+	p.FixedHeader.RemainingLength = 0
+	return p.FixedHeader.Encode()
 }
 
 func (p *Pingresp) Decode(data []byte) (int, error) {

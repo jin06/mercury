@@ -138,7 +138,7 @@ func (c *generic) runloop(ctx context.Context) error {
 			return
 		}
 	}()
-	wg.Done()
+	wg.Wait()
 	return nil
 }
 
@@ -189,7 +189,7 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			}
 			switch val := p.(type) {
 			case *mqtt.Pingreq:
-				resp = mqtt.NewDefault()
+				resp = val.Response()
 			case *mqtt.Publish:
 				resp, err = c.handler.HandlePacket(val)
 			case *mqtt.Pubrec:
@@ -223,11 +223,11 @@ func (c *generic) Read() (mqtt.Packet, error) {
 }
 
 func (c *generic) Write(p mqtt.Packet) (err error) {
-	defer func(e *error) {
-		if r := recover(); r != nil {
-			*e = utils.ErrClosedChannel
-		}
-	}(&err)
+	// defer func(e *error) {
+	// 	if r := recover(); r != nil {
+	// 		*e = utils.ErrClosedChannel
+	// 	}
+	// }(&err)
 	c.output <- p
 	return
 }
@@ -269,8 +269,8 @@ func (c *generic) Close(ctx context.Context) (err error) {
 		}
 	}
 	if c.Connection != nil {
-		err = c.Connection.Close()
+		c.Connection.Close()
 	}
-	c.handler.Deregister(c)
+	err = c.handler.Deregister(c)
 	return
 }
