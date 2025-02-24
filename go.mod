@@ -5,6 +5,7 @@ go 1.22
 // go 1.23
 
 require (
+	github.com/derekparker/trie v0.0.0-20230829180723-39f4de51ef7d
 	github.com/google/uuid v1.6.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

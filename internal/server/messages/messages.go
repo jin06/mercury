@@ -1,4 +1,4 @@
 package messages
 
-type Messages interface {
+type Service interface {
 }
