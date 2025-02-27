@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/common-nighthawk/go-figure"
 	"github.com/jin06/mercury/internal/broker"
 	"github.com/jin06/mercury/internal/config"
 	"github.com/spf13/cobra"
@@ -15,7 +15,9 @@ func init() {
 	cmd = cobra.Command{
 		Use: "MQTT broker!",
 		RunE: func(c *cobra.Command, args []string) error {
-			fmt.Println("Hi~~ mecury is a mqtt server.")
+			// fmt.Println("Hi~~ mercury is a mqtt server.")
+			myFigure := figure.NewFigure("Mercury MQTT Broker", "", true)
+			myFigure.Print()
 			if path, err := c.Flags().GetString("config"); err != nil {
 				return err
 			} else if err := config.Init(path); err != nil {

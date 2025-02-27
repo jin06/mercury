@@ -1,3 +1,7 @@
 listeners:
   - type: tcp
     addr: 0.0.0.0:1883
+
+server_config:
+  max_connections: 1000
+  message_delivery_timeout: 10s

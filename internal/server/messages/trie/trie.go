@@ -1,5 +1,13 @@
 package trie
 
+/*
+ Trie
+ Patricia Trie
+ SkipList Hash
+ AC
+ ?
+*/
+
 import (
 	"sort"
 	"strings"
@@ -73,7 +81,7 @@ func (t *Trie[T]) Add(key string, meta T) (*node[T], error) {
 	}
 	nd = nd.newChild(nul, key, 0, meta, true)
 
-	return nil, err
+	return nd, nil
 }
 
 // Find finds and returns meta data associated
