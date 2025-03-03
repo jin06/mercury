@@ -154,7 +154,7 @@ func (p *Properties) Len() uint64 {
 
 func (p *Properties) Encode() ([]byte, error) {
 	if p == nil {
-		return nil, nil
+		return []byte{0}, nil
 	}
 	result := []byte{0}
 

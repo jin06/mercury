@@ -23,18 +23,19 @@ type Connect struct {
 
 func (c *Connect) Response() *Connack {
 	resp := &Connack{
-		Version: c.Version,
+		Version:    c.Version,
+		ReasonCode: RET_CONNACK_ACCEPT,
 		FixHeader: &FixedHeader{
 			PacketType: CONNACK,
 		},
 	}
 
-	switch resp.Version {
-	case MQTT3, MQTT4:
-		resp.ReasonCode = RET_CONNACK_ACCEPT
-	case MQTT5:
-		resp.ReasonCode = V5_SUCCESS
-	}
+	// switch resp.Version {
+	// case MQTT3, MQTT4:
+	// 	resp.ReasonCode = RET_CONNACK_ACCEPT
+	// case MQTT5:
+	// 	resp.ReasonCode = V5_SUCCESS
+	// }
 
 	return resp
 }

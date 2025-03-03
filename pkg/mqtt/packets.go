@@ -44,8 +44,10 @@ type FixedHeader struct {
 
 func (f *FixedHeader) Encode() ([]byte, error) {
 	var data []byte
-	data = append(data, byte(f.PacketType<<4))
-	data = append(data, (f.Flags & 0b0001111))
+	// data = append(data, byte(f.PacketType<<4))
+	// data = append(data, (f.Flags & 0b0001111))
+	bit1 := byte(f.PacketType<<4) | (f.Flags & 0b0001111)
+	data = append(data, bit1)
 	if length, err := encodeVariableByteInteger(f.RemainingLength); err != nil {
 		return nil, err
 	} else {

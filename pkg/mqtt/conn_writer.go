@@ -22,7 +22,9 @@ func (w *Writer) WritePacket(p Packet) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Writer.Write(data)
+	// _, err = w.Writer.Write(data)
+	//todo: buffer io writer will not write data to the underlying writer until the buffer is full
+	_, err = w.raw.Write(data)
 	return err
 }
 

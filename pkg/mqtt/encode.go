@@ -13,14 +13,13 @@ func encodeVariableByteInteger(length int) ([]byte, error) {
 
 	var result []byte
 	for length > 0 {
-		byteValue := byte(length & 0x7F)
-		if len(result) > 0 {
+		// byteValue := byte(length & 0x80)
+		byteValue := byte(length % 128)
+		length = length / 128
+		if length > 0 {
 			byteValue |= 0x80
 		}
-
 		result = append(result, byteValue)
-
-		length >>= 7
 	}
 
 	if len(result) == 0 {
