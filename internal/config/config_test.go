@@ -7,5 +7,8 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	if cfg.Listeners[0].Type != "tcp" {
+		t.Fail()
+	}
 	t.Log(cfg)
 }
