@@ -1,4 +1,4 @@
-package topic
+package subscriptions
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ const (
 	TypeSystem = 2
 )
 
-func New(rawName string) (*TopicFilter, error) {
+func NewTF(rawName string) (*TopicFilter, error) {
 	tf := &TopicFilter{RawName: rawName}
 	if err := tf.valid(); err != nil {
 		return nil, err
@@ -29,6 +29,7 @@ type TopicFilter struct {
 	TopicName string
 	Type      Type
 	Group     string // share topic group
+	Parts     []string
 }
 
 func (tf *TopicFilter) valid() error {
@@ -53,6 +54,7 @@ func (tf *TopicFilter) valid() error {
 }
 
 func (tf *TopicFilter) init() error {
+	tf.Parts = strings.Split(tf.RawName, "/")
 	if strings.HasPrefix(tf.RawName, "$share/") {
 		tf.Type = TypeShare
 		parts := strings.SplitN(tf.RawName, "/", 3)
@@ -69,4 +71,12 @@ func (tf *TopicFilter) init() error {
 		tf.TopicName = tf.RawName
 	}
 	return nil
+}
+
+func (tf *TopicFilter) subscriber(clientID string) *Subscriber {
+	return &Subscriber{
+		tf.Type,
+		clientID,
+		tf.Group,
+	}
 }
