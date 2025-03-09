@@ -65,7 +65,7 @@ func (t *trieSub) Unsub(topic string, clientID string) {
 	node.mu.Unlock()
 }
 
-func (t *trieSub) GetSubscribers(topic string) []*Subscriber {
+func (t *trieSub) GetSubers(topic string) []*Subscriber {
 	parts := strings.Split(topic, "/")
 	node := t.root
 	for _, part := range parts {
@@ -80,8 +80,8 @@ func (t *trieSub) GetSubscribers(topic string) []*Subscriber {
 	node.mu.RLock()
 	defer node.mu.RUnlock()
 	subs := make([]*Subscriber, 0, len(node.subs))
-	for sub := range node.subs {
-		subs = append(subs, sub)
+	for _, suber := range node.subs {
+		subs = append(subs, suber)
 	}
 	return subs
 }

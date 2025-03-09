@@ -13,6 +13,10 @@ type Subscribe struct {
 	Properties    *Properties
 }
 
+func (s *Subscribe) Response() *Suback {
+	return &Suback{}
+}
+
 func (s *Subscribe) Encode() ([]byte, error) {
 	body, err := s.EncodeBody()
 	if err != nil {

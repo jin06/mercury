@@ -83,7 +83,7 @@ func (c *generic) connect() (err error) {
 		return utils.ErrMalformedPacket
 	}
 
-	if response, err = c.handler.HandlePacket(p); err != nil {
+	if response, err = c.handler.HandlePacket(p, c.id); err != nil {
 		return
 	}
 
@@ -191,11 +191,12 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			case *mqtt.Pingreq:
 				resp = val.Response()
 			case *mqtt.Publish:
-				resp, err = c.handler.HandlePacket(val)
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrec:
 			case *mqtt.Pubrel:
 			case *mqtt.Pubcomp:
 			case *mqtt.Subscribe:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Unsubscribe:
 			case *mqtt.Disconnect:
 			case *mqtt.Auth:

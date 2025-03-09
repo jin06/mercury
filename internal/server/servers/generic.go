@@ -5,17 +5,20 @@ import (
 	"errors"
 
 	"github.com/jin06/mercury/internal/server"
+	"github.com/jin06/mercury/internal/server/subscriptions"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 func newGeneric() *generic {
 	return &generic{
-		manager: server.NewManager(),
+		manager:    server.NewManager(),
+		subManager: subscriptions.NewTrie(),
 	}
 }
 
 type generic struct {
-	manager *server.Manager
+	manager    *server.Manager
+	subManager subscriptions.SubManager
 }
 
 func (g *generic) Run(ctx context.Context) error {
@@ -38,13 +41,14 @@ func (g *generic) Deregister(c server.Client) error {
 	return nil
 }
 
-func (g *generic) HandlePacket(packet mqtt.Packet) (resp mqtt.Packet, err error) {
+func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet, err error) {
 	switch p := packet.(type) {
 	case *mqtt.Connect:
 		return g.handleConnect(p)
 	case *mqtt.Pingreq:
 		return nil, nil
 	case *mqtt.Subscribe:
+		return g.HandleSubscribe(p, cid)
 	case *mqtt.Disconnect:
 	}
 	return
@@ -55,7 +59,7 @@ func (g *generic) handleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error)
 	return
 }
 
-func (g *generic) HandleConnack(p *mqtt.Connack) error {
+func (g *generic) HandleConnack(p *mqtt.Connack) (resp *mqtt.Suback, err error) {
 	panic("implement me")
 }
 
@@ -79,8 +83,12 @@ func (g *generic) HandlePubcomp(p *mqtt.Pubcomp) error {
 	panic("implement me")
 }
 
-func (g *generic) HandleSubscribe(p *mqtt.Subscribe) error {
-	panic("implement me")
+func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Suback, err error) {
+	if err = g.subManager.Sub(string(p.TopicWildcard), cid); err != nil {
+		return nil, err
+	}
+	resp = p.Response()
+	return
 }
 
 func (g *generic) HandleSuback(p *mqtt.Suback) error {

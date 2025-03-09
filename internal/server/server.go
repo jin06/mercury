@@ -7,5 +7,5 @@ import (
 type Server interface {
 	Register(client Client) error
 	Deregister(client Client) error
-	HandlePacket(packet mqtt.Packet) (response mqtt.Packet, err error)
+	HandlePacket(packet mqtt.Packet, cid string) (response mqtt.Packet, err error)
 }
