@@ -6,10 +6,10 @@ func NewUnsubscribe(header *FixedHeader) *Unsubscribe {
 
 type Unsubscribe struct {
 	*FixedHeader
-	Version    ProtocolVersion
-	PacketID   PacketID
-	Payload    []TopicWildcard
-	Properties *Properties
+	Version     ProtocolVersion
+	PacketID    PacketID
+	ReasonCodes []ReasonCode
+	Properties  *Properties
 }
 
 func (u *Unsubscribe) Encode() ([]byte, error) {
@@ -62,9 +62,7 @@ func (u *Unsubscribe) RemainingLength() int {
 		propertiesLength, _ := u.Properties.Encode()
 		length += len(propertiesLength)
 	}
-	for _, topic := range u.Payload {
-		length += 2 + len(topic) // UTF-8 encoded topic length
-	}
+	length = len(u.ReasonCodes)
 	return length
 }
 
@@ -93,14 +91,13 @@ func (u *Unsubscribe) DecodeBody(data []byte) (int, error) {
 		start += n
 	}
 
+	if u.ReasonCodes == nil {
+		u.ReasonCodes = make([]ReasonCode, 0)
+	}
 	// Decode Payload
 	for start < len(data) {
-		topicWildcard, n, err := decodeUTF8Str(data[start:])
-		if err != nil {
-			return start, err
-		}
-		u.Payload = append(u.Payload, TopicWildcard(topicWildcard))
-		start += n
+		u.ReasonCodes = append(u.ReasonCodes, ReasonCode(data[start]))
+		start++
 	}
 
 	return len(data), nil
@@ -122,12 +119,8 @@ func (u *Unsubscribe) EncodeBody() ([]byte, error) {
 	}
 
 	// Encode Payload
-	for _, topic := range u.Payload {
-		if topicData, err := encodeUTF8Str(string(topic)); err != nil {
-			return nil, err
-		} else {
-			data = append(data, topicData...)
-		}
+	for _, code := range u.ReasonCodes {
+		data = append(data, byte(code))
 	}
 
 	return data, nil

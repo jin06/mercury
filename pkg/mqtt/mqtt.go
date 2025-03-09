@@ -34,5 +34,3 @@ const (
 	MQTT4 ProtocolVersion = 4
 	MQTT5 ProtocolVersion = 5
 )
-
-type TopicWildcard string

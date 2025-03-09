@@ -78,8 +78,8 @@ func (c *generic) connect() (err error) {
 	if p, err = c.ReadPacket(); err != nil {
 		return
 	}
-
-	if _, ok := p.(*mqtt.Connect); !ok {
+	cp, ok := p.(*mqtt.Connect)
+	if !ok {
 		return utils.ErrMalformedPacket
 	}
 
@@ -94,6 +94,7 @@ func (c *generic) connect() (err error) {
 		return
 	}
 	c.connected = true
+	c.Reader.Version = cp.Version
 	return nil
 }
 

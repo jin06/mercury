@@ -15,6 +15,7 @@ func newReader(c io.Reader) *Reader {
 type Reader struct {
 	raw io.Reader
 	*bufio.Reader
+	Version ProtocolVersion
 }
 
 func (r *Reader) Read(n int) ([]byte, error) {
@@ -49,7 +50,7 @@ func (r *Reader) ReadPacket() (Packet, error) {
 	case PUBCOMP:
 		packet = NewPubcomp(header)
 	case SUBSCRIBE:
-		packet = NewSubscribe(header)
+		packet = NewSubscribe(header, r.Version)
 	case SUBACK:
 		packet = NewSuback(header)
 	case UNSUBSCRIBE:

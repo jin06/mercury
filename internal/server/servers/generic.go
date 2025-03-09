@@ -59,7 +59,7 @@ func (g *generic) handleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error)
 	return
 }
 
-func (g *generic) HandleConnack(p *mqtt.Connack) (resp *mqtt.Suback, err error) {
+func (g *generic) HandleConnack(p *mqtt.Connack) error {
 	panic("implement me")
 }
 
@@ -84,8 +84,10 @@ func (g *generic) HandlePubcomp(p *mqtt.Pubcomp) error {
 }
 
 func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Suback, err error) {
-	if err = g.subManager.Sub(string(p.TopicWildcard), cid); err != nil {
-		return nil, err
+	for _, sub := range p.Subscriptions {
+		if err = g.subManager.Sub(sub.TopicFilter, cid); err != nil {
+			return nil, err
+		}
 	}
 	resp = p.Response()
 	return
