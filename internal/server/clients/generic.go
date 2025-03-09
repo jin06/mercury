@@ -94,6 +94,7 @@ func (c *generic) connect() (err error) {
 		return
 	}
 	c.connected = true
+	c.id = cp.ClientID
 	c.Reader.Version = cp.Version
 	return nil
 }

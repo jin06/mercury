@@ -13,10 +13,17 @@ type Subscribe struct {
 }
 
 func (s *Subscribe) Response() *Suback {
-	return &Suback{
-		FixedHeader: &FixedHeader{},
-		Version:     s.Version,
+	resp := &Suback{
+		FixedHeader: &FixedHeader{
+			PacketType: SUBACK,
+		},
+		Version:    s.Version,
+		Payload:    make([]byte, len(s.Subscriptions)),
+		Properties: &Properties{},
+		PacketID:   s.PacketID,
 	}
+
+	return resp
 }
 
 func (s *Subscribe) Encode() ([]byte, error) {

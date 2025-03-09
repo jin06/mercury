@@ -39,8 +39,8 @@ func (t *trieSub) Sub(topic string, clientID string) error {
 				subs:     make(map[string]*Subscriber),
 			}
 		}
-		node = node.children[part]
 		node.mu.Unlock()
+		node = node.children[part]
 	}
 	node.mu.Lock()
 	node.subs[clientID] = tf.subscriber(clientID)

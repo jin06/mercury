@@ -156,7 +156,8 @@ func (p *Properties) Encode() ([]byte, error) {
 	if p == nil {
 		return []byte{0}, nil
 	}
-	result := []byte{0}
+	// result := []byte{0}
+	result := []byte{}
 
 	if p.PayloadFormat != nil {
 		result = append(result, ID_PayloadFormat)

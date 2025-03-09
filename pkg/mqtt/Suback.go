@@ -8,7 +8,6 @@ type Suback struct {
 	*FixedHeader
 	Version    ProtocolVersion
 	PacketID   PacketID
-	GrantedQoS QoS
 	Properties *Properties
 	Payload    []byte
 }
@@ -26,6 +25,25 @@ func (s *Suback) Encode() ([]byte, error) {
 	return append(header, body...), nil
 }
 
+func (s *Suback) EncodeBody() ([]byte, error) {
+	var data []byte
+
+	data = append(data, s.PacketID.Encode()...)
+	// Encode Properties (MQTT 5.0 only)
+	if s.Version == MQTT5 {
+		propertiesData, err := s.Properties.Encode()
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, propertiesData...)
+	}
+
+	// Encode Payload
+	data = append(data, s.Payload...)
+
+	return data, nil
+}
+
 func (s *Suback) Decode(data []byte) (int, error) {
 	n, err := s.FixedHeader.Decode(data)
 	if err != nil {
@@ -36,33 +54,14 @@ func (s *Suback) Decode(data []byte) (int, error) {
 }
 
 func (s *Suback) DecodeBody(data []byte) (int, error) {
-	var start int
 
-	// Decode Packet ID
-	packetID, err := decodeUint16(data[start : start+2])
+	// Decode Properties (MQTT 5.0 only)
+	s.Properties = new(Properties)
+	start, err := s.Properties.Decode(data)
 	if err != nil {
 		return start, err
 	}
-	s.PacketID = PacketID(packetID)
-	start += 2
-
-	// Decode Granted QoS
-	s.GrantedQoS = QoS(data[start])
-	start++
-
-	// Decode Properties (MQTT 5.0 only)
-	if len(data) > start {
-		s.Properties = new(Properties)
-		n, err := s.Properties.Decode(data[start:])
-		if err != nil {
-			return start, err
-		}
-		start += n
-	}
-
-	// Decode Payload
 	s.Payload = data[start:]
-
 	return len(data), nil
 }
 
@@ -82,30 +81,6 @@ func (s *Suback) Write(w *Writer) error {
 	}
 	_, err = w.Write(data)
 	return err
-}
-
-func (s *Suback) EncodeBody() ([]byte, error) {
-	var data []byte
-
-	// Encode Packet ID
-	data = append(data, encodePacketID(s.PacketID)...)
-
-	// Encode Granted QoS
-	data = append(data, byte(s.GrantedQoS))
-
-	// Encode Properties (MQTT 5.0 only)
-	if s.Properties != nil {
-		propertiesData, err := s.Properties.Encode()
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, propertiesData...)
-	}
-
-	// Encode Payload
-	data = append(data, s.Payload...)
-
-	return data, nil
 }
 
 func (s *Suback) WriteBody(w *Writer) error {
