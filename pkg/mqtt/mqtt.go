@@ -34,3 +34,10 @@ const (
 	MQTT4 ProtocolVersion = 4
 	MQTT5 ProtocolVersion = 5
 )
+
+type PayloadFormat = byte
+
+const (
+	PayloadFormatBytes  PayloadFormat = 0
+	PayloadFormatString PayloadFormat = 1
+)
