@@ -1,12 +1,17 @@
 package server
 
 import (
+	"math/rand"
 	"sync"
+	"time"
+
+	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 func NewManager() *Manager {
 	return &Manager{
 		clients: map[string]Client{},
+		// todo persistent store
 	}
 }
 
@@ -65,4 +70,10 @@ func (m *Manager) Iterator(f func(c Client)) {
 	for _, c := range m.clients {
 		f(c)
 	}
+}
+
+// todo
+func (m *Manager) GetPacketID() mqtt.PacketID {
+	rand.Seed(time.Now().UnixNano())
+	return mqtt.PacketID(rand.Intn(65535) + 1) // Packet ID is a 16-bit unsigned integer
 }

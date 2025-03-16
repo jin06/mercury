@@ -14,7 +14,7 @@ type Publish struct {
 	ResponseTopic          string // from mqtt5
 	CorrelationData        []byte // from mqtt5
 	Properties             *Properties
-	SubscriptionIdentifier uint32
+	SubscriptionIdentifier []uint32
 	ContentType            string
 	Version                ProtocolVersion
 }

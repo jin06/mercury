@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/subscriptions"
 	"github.com/jin06/mercury/pkg/mqtt"
@@ -64,7 +65,15 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 }
 
 func (g *generic) HandlePublish(p *mqtt.Publish) error {
-	panic("implement me")
+	subers := g.subManager.GetSubers(p.Topic)
+	for _, s := range subers {
+		msg := &model.Message{}
+		msg.FromPublish(p)
+		// todo
+		msg.PacketID = g.manager.GetPacketID()
+		g.Delivery(s.ClientID, msg)
+	}
+	return nil
 }
 
 func (g *generic) HandlePuback(p *mqtt.Puback) error {
@@ -121,6 +130,12 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 	panic("implement me")
 }
 
-// func (g *generic) HandlePacket(p mqtt.Packet) error {
-// 	panic("implement me")
-// }
+//	func (g *generic) HandlePacket(p mqtt.Packet) error {
+//		panic("implement me")
+//	}
+func (g *generic) Delivery(cid string, msg *model.Message) error {
+	client := g.manager.Get(cid)
+	if client != nil {
+	}
+	return nil
+}

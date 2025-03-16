@@ -1,3 +1,0 @@
-Messages
-=========
-For messages delivery
