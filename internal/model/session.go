@@ -10,4 +10,6 @@ type Session struct {
 	KeepTime time.Time `json:"keep_time"`
 	Username string    `json:"username"`
 	Clean    bool      `json:"clean"`
+	// Session Expiry Interval inseconds
+	Expiry uint32 `json:"expiry"`
 }

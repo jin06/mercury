@@ -1,3 +1,4 @@
 package clients
 
-type Options struct{}
+type Options struct {
+}
