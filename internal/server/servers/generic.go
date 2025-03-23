@@ -11,15 +11,18 @@ import (
 )
 
 func newGeneric() *generic {
-	return &generic{
+	server := &generic{
 		manager:    server.NewManager(),
 		subManager: subscriptions.NewTrie(),
 	}
+	// server.delivery = newSingle(server.subManager)
+	return server
 }
 
 type generic struct {
 	manager    *server.Manager
 	subManager subscriptions.SubManager
+	// delivery   Delivery // remove delivery or not
 }
 
 func (g *generic) Run(ctx context.Context) error {
@@ -133,9 +136,10 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 //	func (g *generic) HandlePacket(p mqtt.Packet) error {
 //		panic("implement me")
 //	}
+
 func (g *generic) Delivery(cid string, msg *model.Message) error {
-	client := g.manager.Get(cid)
-	if client != nil {
+	if client := g.manager.Get(cid); client != nil {
+		return client.Write(msg.ToPublish())
 	}
 	return nil
 }
