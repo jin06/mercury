@@ -31,6 +31,7 @@ func Parse(path string) (*Config, error) {
 type Config struct {
 	Listeners    []Listener   `yaml:"listeners"`
 	ServerConfig ServerConfig `yaml:"server_config"`
+	DBConfig     DBConfig     `yaml:"db"`
 }
 
 type Listener struct {
@@ -43,4 +44,13 @@ type ServerConfig struct {
 	MaxConnections int `yaml:"max_connections"`
 	// MessageDeliveryTimeout is the maximum time in seconds the server will wait for a message to be delivered.
 	MessageDeliveryTimeout time.Duration `yaml:"message_delivery_timeout"`
+}
+
+type DBConfig struct {
+	Driver   string `yaml:"driver"` //  mysql,postgres
+	User     string `yaml:"user"`   //
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Database string `yaml:"database"`
 }
