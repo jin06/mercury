@@ -52,11 +52,20 @@ func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet
 		return g.HandleConnect(p)
 	case *mqtt.Pingreq:
 		return g.HandlePingreq(p, cid)
+	case *mqtt.Pubrec:
+		return g.HandlePubrec(p, cid)
+	case *mqtt.Pubrel:
+		return g.HandlePubrel(p, cid)
+	case *mqtt.Pubcomp:
+		return g.HandlePubcomp(p, cid)
 	case *mqtt.Subscribe:
 		return g.HandleSubscribe(p, cid)
 	case *mqtt.Unsubscribe:
 		return g.HandleUnsubscribe(p, cid)
 	case *mqtt.Disconnect:
+		return nil, g.HandleDisconnect(p, cid)
+	case *mqtt.Auth:
+		return
 	}
 	return
 }
@@ -70,7 +79,7 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 	panic("implement me")
 }
 
-func (g *generic) HandlePublish(p *mqtt.Publish) error {
+func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, err error) {
 	subers := g.subManager.GetSubers(p.Topic)
 	for _, s := range subers {
 		msg := &model.Message{}
@@ -79,23 +88,23 @@ func (g *generic) HandlePublish(p *mqtt.Publish) error {
 		msg.PacketID = g.manager.GetPacketID()
 		g.Delivery(s.ClientID, msg)
 	}
-	return nil
+	return
 }
 
-func (g *generic) HandlePuback(p *mqtt.Puback) error {
-	panic("implement me")
+func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, err error) {
+	return
 }
 
-func (g *generic) HandlePubrec(p *mqtt.Pubrec) error {
-	panic("implement me")
+func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
+	return
 }
 
-func (g *generic) HandlePubrel(p *mqtt.Pubrel) error {
-	panic("implement me")
+func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
+	return
 }
 
-func (g *generic) HandlePubcomp(p *mqtt.Pubcomp) error {
-	panic("implement me")
+func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, err error) {
+	return
 }
 
 func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Suback, err error) {

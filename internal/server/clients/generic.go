@@ -202,21 +202,23 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			case *mqtt.Publish:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrec:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrel:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubcomp:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Subscribe:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Unsubscribe:
-				fmt.Println("unsubscribe", val)
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Disconnect:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Auth:
 			}
 		}
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("%v\n", resp)
 		c.KeepAlive()
 		if resp != nil {
 			c.Write(resp)
