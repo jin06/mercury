@@ -1,11 +1,11 @@
 package mqtt
 
-func NewSuback(header *FixedHeader) *Suback {
-	return &Suback{FixedHeader: header}
+func NewSuback(header *FixedHeader, v ProtocolVersion) *Suback {
+	return &Suback{BasePacket: &BasePacket{header, v}}
 }
 
 type Suback struct {
-	*FixedHeader
+	*BasePacket
 	PacketID   PacketID
 	Properties *Properties
 	Payload    []byte

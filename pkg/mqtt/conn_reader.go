@@ -29,42 +29,40 @@ func (r *Reader) Read(n int) ([]byte, error) {
 }
 
 func (r *Reader) ReadPacket() (Packet, error) {
-	header := &FixedHeader{
-		Version: r.Version,
-	}
+	header := &FixedHeader{}
 	if err := header.Read(r); err != nil {
 		return nil, err
 	}
 	var packet Packet
 	switch header.PacketType {
 	case CONNECT:
-		packet = NewConnect(header)
+		packet = NewConnect(header, r.Version)
 	case CONNACK:
-		packet = NewConnack(header)
+		packet = NewConnack(header, r.Version)
 	case PUBLISH:
-		packet = NewPublish(header)
+		packet = NewPublish(header, r.Version)
 	case PUBACK:
-		packet = NewPuback(header)
+		packet = NewPuback(header, r.Version)
 	case PUBREC:
-		packet = NewPubrec(header)
+		packet = NewPubrec(header, r.Version)
 	case PUBREL:
-		packet = NewPubrel(header)
+		packet = NewPubrel(header, r.Version)
 	case PUBCOMP:
-		packet = NewPubcomp(header)
+		packet = NewPubcomp(header, r.Version)
 	case SUBSCRIBE:
-		packet = NewSubscribe(header)
+		packet = NewSubscribe(header, r.Version)
 	case SUBACK:
-		packet = NewSuback(header)
+		packet = NewSuback(header, r.Version)
 	case UNSUBSCRIBE:
-		packet = NewUnsubscribe(header)
+		packet = NewUnsubscribe(header, r.Version)
 	case UNSUBACK:
-		packet = NewUnsuback(header)
+		packet = NewUnsuback(header, r.Version)
 	case PINGREQ:
-		packet = NewPingreq(header)
+		packet = NewPingreq(header, r.Version)
 	case PINGRESP:
-		packet = NewPingresp(header)
+		packet = NewPingresp(header, r.Version)
 	case DISCONNECT:
-		packet = NewDisconnect(header)
+		packet = NewDisconnect(header, r.Version)
 	}
 	if packet == nil {
 		return nil, ErrMalformedPacket

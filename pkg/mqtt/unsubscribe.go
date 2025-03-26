@@ -1,11 +1,11 @@
 package mqtt
 
-func NewUnsubscribe(header *FixedHeader) *Unsubscribe {
-	return &Unsubscribe{FixedHeader: header}
+func NewUnsubscribe(header *FixedHeader, v ProtocolVersion) *Unsubscribe {
+	return &Unsubscribe{BasePacket: &BasePacket{header, v}}
 }
 
 type Unsubscribe struct {
-	*FixedHeader
+	*BasePacket
 	PacketID     PacketID
 	Properties   *Properties
 	TopicFilters []string // dodo
@@ -13,10 +13,7 @@ type Unsubscribe struct {
 
 func (u *Unsubscribe) Response() *Unsuback {
 	resp := &Unsuback{
-		FixedHeader: &FixedHeader{
-			PacketType: UNSUBACK,
-		},
-		Version:    u.Version,
+		BasePacket: newBasePacket(UNSUBACK, u.Version),
 		PacketID:   u.PacketID,
 		Properties: &Properties{},
 	}

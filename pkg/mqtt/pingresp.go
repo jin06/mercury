@@ -1,11 +1,11 @@
 package mqtt
 
-func NewPingresp(header *FixedHeader) *Pingresp {
-	return &Pingresp{FixedHeader: header}
+func NewPingresp(header *FixedHeader, v ProtocolVersion) *Pingresp {
+	return &Pingresp{BasePacket: &BasePacket{header, v}}
 }
 
 type Pingresp struct {
-	*FixedHeader
+	*BasePacket
 }
 
 func (p *Pingresp) Encode() ([]byte, error) {

@@ -1,12 +1,11 @@
 package mqtt
 
-func NewPubcomp(header *FixedHeader) *Pubcomp {
-	return &Pubcomp{FixedHeader: header}
+func NewPubcomp(header *FixedHeader, v ProtocolVersion) *Pubcomp {
+	return &Pubcomp{BasePacket: &BasePacket{header, v}}
 }
 
 type Pubcomp struct {
-	*FixedHeader
-	Version    ProtocolVersion
+	*BasePacket
 	ReasonCode ReasonCode
 	Properties *Properties
 	PacketID   PacketID

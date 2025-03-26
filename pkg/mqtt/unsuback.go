@@ -1,12 +1,11 @@
 package mqtt
 
-func NewUnsuback(header *FixedHeader) *Unsuback {
-	return &Unsuback{FixedHeader: header}
+func NewUnsuback(header *FixedHeader, v ProtocolVersion) *Unsuback {
+	return &Unsuback{BasePacket: &BasePacket{header, v}}
 }
 
 type Unsuback struct {
-	*FixedHeader
-	Version     ProtocolVersion
+	*BasePacket
 	PacketID    PacketID
 	ReasonCodes []ReasonCode
 	Properties  *Properties

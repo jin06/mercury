@@ -1,12 +1,11 @@
 package mqtt
 
-func NewDisconnect(header *FixedHeader) *Disconnect {
-	return &Disconnect{FixedHeader: header}
+func NewDisconnect(header *FixedHeader, v ProtocolVersion) *Disconnect {
+	return &Disconnect{BasePacket: &BasePacket{header, v}}
 }
 
 type Disconnect struct {
-	*FixedHeader
-	Version    ProtocolVersion
+	*BasePacket
 	ResionCode ReasonCode
 	Properties *Properties
 }

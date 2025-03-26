@@ -1,7 +1,7 @@
 package mqtt
 
 type Publish struct {
-	*FixedHeader
+	*BasePacket
 	PacketID               PacketID
 	Dup                    bool
 	Qos                    QoS
@@ -16,11 +16,10 @@ type Publish struct {
 	Properties             *Properties
 	SubscriptionIdentifier []uint32
 	ContentType            string
-	Version                ProtocolVersion
 }
 
-func NewPublish(header *FixedHeader) *Publish {
-	return &Publish{FixedHeader: header}
+func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
+	return &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
 }
 
 func (p *Publish) Encode() ([]byte, error) {

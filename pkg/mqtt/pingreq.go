@@ -1,20 +1,16 @@
 package mqtt
 
-func NewPingreq(header *FixedHeader) *Pingreq {
-	return &Pingreq{FixedHeader: header}
+func NewPingreq(header *FixedHeader, v ProtocolVersion) *Pingreq {
+	return &Pingreq{BasePacket: &BasePacket{header, v}}
 }
 
 type Pingreq struct {
-	*FixedHeader
+	*BasePacket
 }
 
 func (p *Pingreq) Response() *Pingresp {
 	return &Pingresp{
-		FixedHeader: &FixedHeader{
-			PacketType:      PINGRESP,
-			Flags:           0,
-			RemainingLength: 0,
-		},
+		BasePacket: newBasePacket(PINGRESP, p.Version),
 	}
 }
 

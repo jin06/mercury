@@ -1,13 +1,12 @@
 package mqtt
 
-func NewPuback(header *FixedHeader) *Puback {
-	return &Puback{FixedHeader: header}
+func NewPuback(header *FixedHeader, v ProtocolVersion) *Puback {
+	return &Puback{BasePacket: &BasePacket{header, v}}
 }
 
 type Puback struct {
-	*FixedHeader
+	*BasePacket
 	PacketID     PacketID
-	Version      ProtocolVersion
 	ReasonCode   ReasonCode
 	ReasonString string
 	Properties   *Properties

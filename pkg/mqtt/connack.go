@@ -1,13 +1,11 @@
 package mqtt
 
-func NewConnack(header *FixedHeader) *Connack {
-	return &Connack{FixHeader: header}
+func NewConnack(header *FixedHeader, v ProtocolVersion) *Connack {
+	return &Connack{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
 }
 
 type Connack struct {
-	Version   ProtocolVersion
-	FixHeader *FixedHeader
-	// FixHeader *FixedHeader
+	*BasePacket
 
 	ReasonCode ReasonCode
 	Properties *Properties
@@ -21,8 +19,8 @@ func (c *Connack) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.FixHeader.RemainingLength = len(body)
-	header, err := c.FixHeader.Encode()
+	c.FixedHeader.RemainingLength = len(body)
+	header, err := c.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +41,12 @@ func (c *Connack) EncodeBody() ([]byte, error) {
 }
 
 func (c *Connack) Decode(data []byte) (int, error) {
-	c.FixHeader = &FixedHeader{}
-	n, err := c.FixHeader.Decode(data)
+	c.FixedHeader = &FixedHeader{}
+	n, err := c.FixedHeader.Decode(data)
 	if err != nil {
 		return 0, err
 	}
-	bodyLen, err := c.DecodeBody(data[n:c.FixHeader.RemainingLength])
+	bodyLen, err := c.DecodeBody(data[n:c.FixedHeader.RemainingLength])
 	return bodyLen + n, err
 }
 
@@ -74,15 +72,14 @@ func (c *Connack) DecodeBody(data []byte) (int, error) {
 }
 
 func (c *Connack) Read(r *Reader) error {
-	c.FixHeader = new(FixedHeader)
-	if err := c.FixHeader.Read(r); err != nil {
+	if err := c.BasePacket.FixedHeader.Read(r); err != nil {
 		return err
 	}
 	return c.ReadBody(r)
 }
 
 func (c *Connack) ReadBody(r *Reader) error {
-	data, err := r.Read(c.FixHeader.RemainingLength)
+	data, err := r.Read(c.BasePacket.FixedHeader.RemainingLength)
 	if err != nil {
 		return err
 	}

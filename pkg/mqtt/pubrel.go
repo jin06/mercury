@@ -1,12 +1,11 @@
 package mqtt
 
-func NewPubrel(header *FixedHeader) *Pubrel {
-	return &Pubrel{FixedHeader: header}
+func NewPubrel(header *FixedHeader, v ProtocolVersion) *Pubrel {
+	return &Pubrel{BasePacket: &BasePacket{header, v}}
 }
 
 type Pubrel struct {
-	*FixedHeader
-	Version    ProtocolVersion
+	*BasePacket
 	PacketID   PacketID
 	QoS        QoS
 	Dup        bool

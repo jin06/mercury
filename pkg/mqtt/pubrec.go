@@ -1,15 +1,14 @@
 package mqtt
 
-func NewPubrec(header *FixedHeader) *Pubrec {
-	return &Pubrec{FixedHeader: header}
+func NewPubrec(header *FixedHeader, v ProtocolVersion) *Pubrec {
+	return &Pubrec{BasePacket: &BasePacket{header, v}}
 }
 
 type Pubrec struct {
-	*FixedHeader
+	*BasePacket
 	PacketID   PacketID
 	ReasonCode ReasonCode
 	Properties *Properties
-	Version    ProtocolVersion
 }
 
 func (p *Pubrec) Encode() ([]byte, error) {

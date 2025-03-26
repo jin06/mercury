@@ -1,11 +1,11 @@
 package mqtt
 
-func NewConnect(header *FixedHeader) *Connect {
-	return &Connect{FixedHeader: header}
+func NewConnect(header *FixedHeader, v ProtocolVersion) *Connect {
+	return &Connect{BasePacket: &BasePacket{FixedHeader: header, Version: v}, Version: v}
 }
 
 type Connect struct {
-	*FixedHeader
+	*BasePacket
 	Version      ProtocolVersion
 	ProtocolName string
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
@@ -23,19 +23,10 @@ type Connect struct {
 
 func (c *Connect) Response() *Connack {
 	resp := &Connack{
-		Version:    c.Version,
+		BasePacket: newBasePacket(CONNACK, c.Version),
 		ReasonCode: RET_CONNACK_ACCEPT,
-		FixHeader: &FixedHeader{
-			PacketType: CONNACK,
-		},
 	}
-
-	// switch resp.Version {
-	// case MQTT3, MQTT4:
-	// 	resp.ReasonCode = RET_CONNACK_ACCEPT
-	// case MQTT5:
-	// 	resp.ReasonCode = V5_SUCCESS
-	// }
+	resp.ReasonCode = V5_SUCCESS
 
 	return resp
 }

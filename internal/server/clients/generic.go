@@ -279,7 +279,7 @@ func (c *generic) KeepAlive() {
 func (c *generic) Close(ctx context.Context) (err error) {
 	if c.connected {
 		if c.err != nil {
-			c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}))
+			c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}, c.Version))
 		}
 	}
 	if c.Connection != nil {

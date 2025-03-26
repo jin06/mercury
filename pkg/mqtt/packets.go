@@ -40,7 +40,6 @@ type FixedHeader struct {
 	PacketType      PacketType
 	Flags           byte
 	RemainingLength int
-	Version         ProtocolVersion
 }
 
 func (f *FixedHeader) Encode() ([]byte, error) {
@@ -106,4 +105,16 @@ func (f *FixedHeader) Write(writer *Writer) error {
 		return err
 	}
 	return writeVariableByteInteger(writer, f.RemainingLength)
+}
+
+func newBasePacket(t PacketType, v ProtocolVersion) *BasePacket {
+	return &BasePacket{
+		FixedHeader: &FixedHeader{PacketType: t},
+		Version:     v,
+	}
+}
+
+type BasePacket struct {
+	*FixedHeader
+	Version ProtocolVersion
 }
