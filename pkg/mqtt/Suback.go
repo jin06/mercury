@@ -6,7 +6,6 @@ func NewSuback(header *FixedHeader) *Suback {
 
 type Suback struct {
 	*FixedHeader
-	Version    ProtocolVersion
 	PacketID   PacketID
 	Properties *Properties
 	Payload    []byte

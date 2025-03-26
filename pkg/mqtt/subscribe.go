@@ -1,12 +1,11 @@
 package mqtt
 
-func NewSubscribe(header *FixedHeader, version ProtocolVersion) *Subscribe {
-	return &Subscribe{FixedHeader: header, Version: version}
+func NewSubscribe(header *FixedHeader) *Subscribe {
+	return &Subscribe{FixedHeader: header}
 }
 
 type Subscribe struct {
 	*FixedHeader
-	Version       ProtocolVersion
 	PacketID      PacketID
 	Subscriptions []*Subscription
 	Properties    *Properties
@@ -16,8 +15,8 @@ func (s *Subscribe) Response() *Suback {
 	resp := &Suback{
 		FixedHeader: &FixedHeader{
 			PacketType: SUBACK,
+			Version:    s.Version,
 		},
-		Version:    s.Version,
 		Payload:    make([]byte, len(s.Subscriptions)),
 		Properties: &Properties{},
 		PacketID:   s.PacketID,

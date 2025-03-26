@@ -13,4 +13,5 @@ type Client interface {
 	UUID() string
 	Write(p mqtt.Packet) (err error)
 	Read() (mqtt.Packet, error)
+	KeepAlive()
 }

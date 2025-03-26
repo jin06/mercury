@@ -3,6 +3,7 @@ package servers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
@@ -48,17 +49,19 @@ func (g *generic) Deregister(c server.Client) error {
 func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet, err error) {
 	switch p := packet.(type) {
 	case *mqtt.Connect:
-		return g.handleConnect(p)
+		return g.HandleConnect(p)
 	case *mqtt.Pingreq:
-		return nil, nil
+		return g.HandlePingreq(p, cid)
 	case *mqtt.Subscribe:
 		return g.HandleSubscribe(p, cid)
+	case *mqtt.Unsubscribe:
+		return g.HandleUnsubscribe(p, cid)
 	case *mqtt.Disconnect:
 	}
 	return
 }
 
-func (g *generic) handleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error) {
+func (g *generic) HandleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error) {
 	resp = p.Response()
 	return
 }
@@ -109,24 +112,28 @@ func (g *generic) HandleSuback(p *mqtt.Suback) error {
 	panic("implement me")
 }
 
-func (g *generic) HandleUnsubscribe(p *mqtt.Unsubscribe) error {
-	panic("implement me")
+func (g *generic) HandleUnsubscribe(p *mqtt.Unsubscribe, cid string) (resp *mqtt.Unsuback, err error) {
+	fmt.Println(123)
+	resp = p.Response()
+	return
 }
 
-func (g *generic) HandleUnsuback(p *mqtt.Unsuback) error {
-	panic("implement me")
+func (g *generic) HandleUnsuback(p *mqtt.Unsuback, cid string) error {
+	return nil
 }
 
-func (g *generic) HandlePingreq(p *mqtt.Pingreq) error {
-	panic("implement me")
+func (g *generic) HandlePingreq(p *mqtt.Pingreq, cid string) (resp *mqtt.Pingresp, err error) {
+	resp = p.Response()
+	return
 }
 
 func (g *generic) HandlePingresp(p *mqtt.Pingresp) error {
 	panic("implement me")
 }
 
-func (g *generic) HandleDisconnect(p *mqtt.Disconnect) error {
-	panic("implement me")
+func (g *generic) HandleDisconnect(p *mqtt.Disconnect, cid string) error {
+	g.manager.Remove(cid)
+	return nil
 }
 
 func (g *generic) HandleAuth(p *mqtt.Auth) error {

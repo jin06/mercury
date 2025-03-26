@@ -6,11 +6,10 @@ func NewUnsuback(header *FixedHeader) *Unsuback {
 
 type Unsuback struct {
 	*FixedHeader
-	Version    ProtocolVersion
-	PacketID   PacketID
-	ReasonCode ReasonCode
-	Properties *Properties
-	Payload    []byte
+	Version     ProtocolVersion
+	PacketID    PacketID
+	ReasonCodes []ReasonCode
+	Properties  *Properties
 }
 
 func (u *Unsuback) Encode() ([]byte, error) {
@@ -48,11 +47,6 @@ func (u *Unsuback) DecodeBody(data []byte) (int, error) {
 
 	// Decode Reason Code (MQTT 5.0 only)
 	if u.Version == MQTT5 {
-		if len(data) > start {
-			u.ReasonCode = ReasonCode(data[start])
-			start++
-		}
-
 		// Decode Properties (MQTT 5.0 only)
 		if len(data) > start {
 			u.Properties = new(Properties)
@@ -63,10 +57,13 @@ func (u *Unsuback) DecodeBody(data []byte) (int, error) {
 			start += n
 		}
 	}
+	for len(data) > start {
+		reason := ReasonCode(data[start])
+		u.ReasonCodes = append(u.ReasonCodes, reason)
+		start++
+	}
 
 	// Decode Payload
-	u.Payload = data[start:]
-
 	return len(data), nil
 }
 
@@ -96,8 +93,6 @@ func (u *Unsuback) EncodeBody() ([]byte, error) {
 
 	// Encode Reason Code (MQTT 5.0 only)
 	if u.Version == MQTT5 {
-		data = append(data, byte(u.ReasonCode))
-
 		// Encode Properties (MQTT 5.0 only)
 		if u.Properties != nil {
 			propertiesData, err := u.Properties.Encode()
@@ -107,10 +102,9 @@ func (u *Unsuback) EncodeBody() ([]byte, error) {
 			data = append(data, propertiesData...)
 		}
 	}
-
-	// Encode Payload
-	data = append(data, u.Payload...)
-
+	for _, code := range u.ReasonCodes {
+		data = append(data, byte(code))
+	}
 	return data, nil
 }
 
@@ -136,7 +130,7 @@ func (u *Unsuback) RemainingLength() int {
 			length += len(propertiesLength)
 		}
 	}
-	length += len(u.Payload)
+	length += len(u.ReasonCodes)
 	return length
 }
 

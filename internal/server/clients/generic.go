@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -83,7 +84,7 @@ func (c *generic) connect() (err error) {
 		return utils.ErrMalformedPacket
 	}
 
-	if response, err = c.handler.HandlePacket(p, c.id); err != nil {
+	if response, err = c.handler.HandleConnect(cp); err != nil {
 		return
 	}
 
@@ -155,7 +156,10 @@ func (c *generic) inputLoop(ctx context.Context) error {
 			return nil
 		case <-c.stopping:
 			return nil
-		case c.input <- p:
+		default:
+			if p != nil {
+				c.input <- p
+			}
 		}
 	}
 }
@@ -184,14 +188,17 @@ func (c *generic) handleLoop(ctx context.Context) error {
 		var err error
 		select {
 		case <-ctx.Done():
+			return nil
 		case <-c.stopping:
+			return nil
 		case p, ok := <-c.input:
 			if !ok {
 				return nil
 			}
 			switch val := p.(type) {
 			case *mqtt.Pingreq:
-				resp = val.Response()
+				// resp = val.Response()
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Publish:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrec:
@@ -200,13 +207,17 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			case *mqtt.Subscribe:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Unsubscribe:
+				fmt.Println("unsubscribe", val)
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Disconnect:
 			case *mqtt.Auth:
 			}
 		}
 		if err != nil {
-			c.keepalive()
+			fmt.Println(err)
 		}
+		fmt.Printf("%v\n", resp)
+		c.KeepAlive()
 		if resp != nil {
 			c.Write(resp)
 		}
@@ -261,7 +272,7 @@ func (c *generic) keepLoop(ctx context.Context) error {
 	}
 }
 
-func (c *generic) keepalive() {
+func (c *generic) KeepAlive() {
 	c.keep = time.Now()
 }
 

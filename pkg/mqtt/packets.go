@@ -40,6 +40,7 @@ type FixedHeader struct {
 	PacketType      PacketType
 	Flags           byte
 	RemainingLength int
+	Version         ProtocolVersion
 }
 
 func (f *FixedHeader) Encode() ([]byte, error) {

@@ -29,7 +29,9 @@ func (r *Reader) Read(n int) ([]byte, error) {
 }
 
 func (r *Reader) ReadPacket() (Packet, error) {
-	header := &FixedHeader{}
+	header := &FixedHeader{
+		Version: r.Version,
+	}
 	if err := header.Read(r); err != nil {
 		return nil, err
 	}
@@ -50,7 +52,7 @@ func (r *Reader) ReadPacket() (Packet, error) {
 	case PUBCOMP:
 		packet = NewPubcomp(header)
 	case SUBSCRIBE:
-		packet = NewSubscribe(header, r.Version)
+		packet = NewSubscribe(header)
 	case SUBACK:
 		packet = NewSuback(header)
 	case UNSUBSCRIBE:
