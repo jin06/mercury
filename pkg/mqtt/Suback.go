@@ -6,9 +6,9 @@ func NewSuback(header *FixedHeader, v ProtocolVersion) *Suback {
 
 type Suback struct {
 	*BasePacket
-	PacketID   PacketID
-	Properties *Properties
-	Payload    []byte
+	PacketID    PacketID
+	Properties  *Properties
+	ReasonCodes []ReasonCode
 }
 
 func (s *Suback) Encode() ([]byte, error) {
@@ -37,8 +37,9 @@ func (s *Suback) EncodeBody() ([]byte, error) {
 		data = append(data, propertiesData...)
 	}
 
-	// Encode Payload
-	data = append(data, s.Payload...)
+	for _, code := range s.ReasonCodes {
+		data = append(data, byte(code))
+	}
 
 	return data, nil
 }
@@ -60,7 +61,11 @@ func (s *Suback) DecodeBody(data []byte) (int, error) {
 	if err != nil {
 		return start, err
 	}
-	s.Payload = data[start:]
+	for len(data) > start {
+		reason := ReasonCode(data[start])
+		s.ReasonCodes = append(s.ReasonCodes, reason)
+		start++
+	}
 	return len(data), nil
 }
 
@@ -101,7 +106,7 @@ func (s *Suback) RemainingLength() int {
 		propertiesLength, _ := s.Properties.Encode()
 		length += len(propertiesLength)
 	}
-	length += len(s.Payload)
+	length += len(s.ReasonCodes)
 	return length
 }
 

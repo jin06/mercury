@@ -13,10 +13,10 @@ type Subscribe struct {
 
 func (s *Subscribe) Response() *Suback {
 	resp := &Suback{
-		BasePacket: newBasePacket(SUBACK, s.Version),
-		Payload:    make([]byte, len(s.Subscriptions)),
-		Properties: &Properties{},
-		PacketID:   s.PacketID,
+		BasePacket:  newBasePacket(SUBACK, s.Version),
+		ReasonCodes: make([]ReasonCode, len(s.Subscriptions)),
+		Properties:  &Properties{},
+		PacketID:    s.PacketID,
 	}
 	return resp
 }
