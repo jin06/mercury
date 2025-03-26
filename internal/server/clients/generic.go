@@ -197,7 +197,6 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			}
 			switch val := p.(type) {
 			case *mqtt.Pingreq:
-				// resp = val.Response()
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Publish:
 				resp, err = c.handler.HandlePacket(val, c.id)

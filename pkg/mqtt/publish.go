@@ -1,5 +1,11 @@
 package mqtt
 
+import "fmt"
+
+func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
+	return &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
+}
+
 type Publish struct {
 	*BasePacket
 	PacketID               PacketID
@@ -18,8 +24,29 @@ type Publish struct {
 	ContentType            string
 }
 
-func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
-	return &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
+func (p *Publish) String() string {
+	return fmt.Sprintf("Publish - Dup: %t, Qos: %d, Retain: %t, Topic: %s, PacketID: %d, Payload: %s",
+		p.Dup, p.Qos, p.Retain, p.Topic, p.PacketID, p.Payload)
+}
+
+func (p *Publish) Response() (resp Packet, err error) {
+	switch p.Qos {
+	case QoS0:
+		resp = nil
+	case QoS1:
+		resp = &Puback{
+			BasePacket: newBasePacket(PUBACK, p.Version),
+			PacketID:   p.PacketID,
+		}
+	case QoS2:
+		resp = &Pubrec{
+			BasePacket: newBasePacket(PUBREC, p.Version),
+			PacketID:   p.PacketID,
+		}
+	default:
+		return nil, ErrInvalidQoS
+	}
+	return
 }
 
 func (p *Publish) Encode() ([]byte, error) {

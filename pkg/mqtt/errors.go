@@ -14,4 +14,5 @@ var (
 	ErrProtocolViolation  = errors.New("protocol violation")
 	ErrUTFLengthTooLong   = errors.New("max length that can be encoded in 2 bytes")
 	ErrReadNotEnoughBytes = errors.New("not enough bytes read from reader")
+	ErrInvalidQoS         = errors.New("invalid QoS")
 )

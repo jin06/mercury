@@ -69,13 +69,17 @@ func (t *trieSub) GetSubers(topic string) []*Subscriber {
 	parts := strings.Split(topic, "/")
 	node := t.root
 	for _, part := range parts {
-		node.mu.RLock()
-		if _, ok := node.children[part]; !ok {
-			node.mu.RUnlock()
+		if found := func() bool {
+			node.mu.RLock()
+			defer node.mu.RUnlock()
+			if _, ok := node.children[part]; !ok {
+				return false
+			}
+			node = node.children[part]
+			return true
+		}(); !found {
 			return nil
 		}
-		node = node.children[part]
-		node.mu.RUnlock()
 	}
 	node.mu.RLock()
 	defer node.mu.RUnlock()
