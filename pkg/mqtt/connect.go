@@ -36,7 +36,7 @@ func (c *Connect) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.FixedHeader.RemainingLength = len(body)
+	c.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := c.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (c *Connect) Read(r *Reader) (err error) {
 }
 
 func (c *Connect) ReadBody(r *Reader) error {
-	data, err := r.Read(c.FixedHeader.RemainingLength)
+	data, err := r.Read(c.Length())
 	if err != nil {
 		return err
 	}

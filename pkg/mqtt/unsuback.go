@@ -16,7 +16,7 @@ func (u *Unsuback) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	u.FixedHeader.RemainingLength = len(body)
+	u.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := u.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (u *Unsuback) DecodeBody(data []byte) (int, error) {
 }
 
 func (u *Unsuback) ReadBody(r *Reader) error {
-	data, err := r.Read(u.FixedHeader.RemainingLength)
+	data, err := r.Read(u.Length())
 	if err != nil {
 		return err
 	}

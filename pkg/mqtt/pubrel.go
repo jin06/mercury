@@ -7,9 +7,17 @@ func NewPubrel(header *FixedHeader, v ProtocolVersion) *Pubrel {
 type Pubrel struct {
 	*BasePacket
 	PacketID   PacketID
-	QoS        QoS
 	Dup        bool
 	Properties *Properties
+}
+
+func (p *Pubrel) Response() (resp Packet) {
+	resp = &Pubcomp{
+		BasePacket: newBasePacket(PUBCOMP, p.Version),
+		PacketID:   p.PacketID,
+		ReasonCode: V5_SUCCESS,
+	}
+	return
 }
 
 func (p *Pubrel) Encode() ([]byte, error) {
@@ -17,7 +25,7 @@ func (p *Pubrel) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.FixedHeader.RemainingLength = len(body)
+	p.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := p.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -61,7 +69,7 @@ func (p *Pubrel) DecodeBody(data []byte) (int, error) {
 }
 
 func (p *Pubrel) ReadBody(r *Reader) error {
-	data, err := r.Read(p.FixedHeader.RemainingLength)
+	data, err := r.Read(p.Length())
 	if err != nil {
 		return err
 	}

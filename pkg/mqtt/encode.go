@@ -6,7 +6,7 @@ import (
 	"math"
 )
 
-func encodeVariableByteInteger(length int) ([]byte, error) {
+func encodeVariableByteInteger[T VariableByteInteger | int](length T) ([]byte, error) {
 	if length < 0 {
 		return nil, errors.New("length cannot be negative")
 	}
@@ -40,7 +40,7 @@ func encodeVariableByteInteger(length int) ([]byte, error) {
 //   - int: The decoded integer value.
 //   - int: The number of bytes consumed.
 //   - error: Any error encountered (e.g., byte slice too short or value too large).
-func decodeVariableByteInteger(data []byte) (int, int, error) {
+func decodeVariableByteInteger(data []byte) (VariableByteInteger, int, error) {
 	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
 	var length int = 0     // The length being built
 	var byteValue byte     // Single byte to read
@@ -73,10 +73,10 @@ func decodeVariableByteInteger(data []byte) (int, int, error) {
 		return 0, n, fmt.Errorf("value exceeds maximum int size")
 	}
 
-	return length, n, nil
+	return VariableByteInteger(length), n, nil
 }
 
-func decodeVariableByteIntegerPtr(data []byte) (*int, int, error) {
+func decodeVariableByteIntegerPtr(data []byte) (*VariableByteInteger, int, error) {
 	res, n, err := decodeVariableByteInteger(data)
 	if err != nil {
 		return nil, n, err
@@ -84,7 +84,7 @@ func decodeVariableByteIntegerPtr(data []byte) (*int, int, error) {
 	return &res, n, nil
 }
 
-func readVariableByteInteger(reader *Reader) (int, int, error) {
+func readVariableByteInteger(reader *Reader) (VariableByteInteger, int, error) {
 	var multiplier int = 1 // Multiplier for each byte (1, 128, 16384, ...)
 	var length int = 0     // The length being built
 	var byteValue byte     // Single byte to read
@@ -111,10 +111,10 @@ func readVariableByteInteger(reader *Reader) (int, int, error) {
 		multiplier *= 128
 	}
 
-	return length, n, nil
+	return VariableByteInteger(length), n, nil
 }
 
-func writeVariableByteInteger(writer *Writer, length int) error {
+func writeVariableByteInteger(writer *Writer, length VariableByteInteger) error {
 	bytes, err := encodeVariableByteInteger(length)
 	if err != nil {
 		return err

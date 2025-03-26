@@ -38,7 +38,7 @@ func (d *Disconnect) EncodeBody() ([]byte, error) {
 }
 
 func (d *Disconnect) ReadBody(r *Reader) error {
-	data, err := r.Read(d.FixedHeader.RemainingLength)
+	data, err := r.Read(d.Length())
 	if err != nil {
 		return err
 	}

@@ -84,7 +84,7 @@ func (p *Puback) DecodeBody(data []byte) (int, error) {
 }
 
 func (p *Puback) ReadBody(r *Reader) error {
-	data, err := r.Read(p.FixedHeader.RemainingLength)
+	data, err := r.Read(p.Length())
 	if err != nil {
 		return err
 	}

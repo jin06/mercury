@@ -91,6 +91,7 @@ func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, 
 		msg.PacketID = g.manager.GetPacketID()
 		g.Delivery(s.ClientID, msg)
 	}
+	resp, err = p.Response()
 	return
 }
 
@@ -103,6 +104,7 @@ func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, er
 }
 
 func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
+	resp = p.Response()
 	return
 }
 

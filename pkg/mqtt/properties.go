@@ -59,7 +59,7 @@ type Properties struct {
 
 	// SubscriptionIdentifier is an identifier for the subscription.
 	// It can be used to relate a subscription to a specific client or purpose.
-	SubscriptionIdentifier *int
+	SubscriptionIdentifier *VariableByteInteger
 
 	// SessionExpiryInterval specifies the session expiry time in seconds.
 	// This defines how long the broker should keep the session alive after the client disconnects.
@@ -345,7 +345,7 @@ func (p *Properties) Encode() ([]byte, error) {
 		result = append(result, encodeBool(*p.SharedSubscriptionAvailable))
 	}
 
-	lengthBytes, err := encodeVariableByteInteger(len(result))
+	lengthBytes, err := encodeVariableByteInteger(VariableByteInteger(len(result)))
 	if err != nil {
 		return nil, err
 	}
@@ -353,10 +353,11 @@ func (p *Properties) Encode() ([]byte, error) {
 }
 
 func (p *Properties) Decode(data []byte) (int, error) {
-	total, n, err := decodeVariableByteInteger(data)
+	length, n, err := decodeVariableByteInteger(data)
 	if err != nil {
 		return n, err
 	}
+	total := length.Int()
 	for i := n; i < total; {
 		identifier := data[i]
 		i++

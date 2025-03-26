@@ -39,7 +39,11 @@ type Packet interface {
 type FixedHeader struct {
 	PacketType      PacketType
 	Flags           byte
-	RemainingLength int
+	RemainingLength VariableByteInteger
+}
+
+func (f *FixedHeader) Length() int {
+	return f.RemainingLength.Int()
 }
 
 func (f *FixedHeader) Encode() ([]byte, error) {
@@ -76,7 +80,7 @@ func (f *FixedHeader) Decode(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	total := 1 + n + length
+	total := 1 + n + int(length)
 	if len(data) != total {
 		return 0, ErrPacketEncoding
 	}

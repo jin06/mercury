@@ -16,7 +16,7 @@ func (a *Auth) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.FixedHeader.RemainingLength = len(body)
+	a.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := a.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (a *Auth) Decode(data []byte) (int, error) {
 }
 
 func (a *Auth) ReadBody(r *Reader) error {
-	data, err := r.Read(a.FixedHeader.RemainingLength)
+	data, err := r.Read(a.Length())
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,8 @@
 package mqtt
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
 	return &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
@@ -8,20 +10,13 @@ func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
 
 type Publish struct {
 	*BasePacket
-	PacketID               PacketID
-	Dup                    bool
-	Qos                    QoS
-	Retain                 bool
-	Topic                  string
-	Payload                []byte
-	PayloadFormatIndicator bool   // from mqtt5
-	MessageExpiryInterval  uint16 // from mqtt5 (seconds)
-	TopicAlias             uint16 // from mqtt5
-	ResponseTopic          string // from mqtt5
-	CorrelationData        []byte // from mqtt5
-	Properties             *Properties
-	SubscriptionIdentifier []uint32
-	ContentType            string
+	PacketID   PacketID
+	Dup        bool
+	Qos        QoS
+	Retain     bool
+	Topic      string
+	Payload    []byte
+	Properties *Properties
 }
 
 func (p *Publish) String() string {
@@ -37,11 +32,13 @@ func (p *Publish) Response() (resp Packet, err error) {
 		resp = &Puback{
 			BasePacket: newBasePacket(PUBACK, p.Version),
 			PacketID:   p.PacketID,
+			ReasonCode: V5_SUCCESS,
 		}
 	case QoS2:
 		resp = &Pubrec{
 			BasePacket: newBasePacket(PUBREC, p.Version),
 			PacketID:   p.PacketID,
+			ReasonCode: V5_SUCCESS,
 		}
 	default:
 		return nil, ErrInvalidQoS
@@ -116,7 +113,7 @@ func (p *Publish) DecodeBody(data []byte) (int, error) {
 }
 
 func (p *Publish) ReadBody(r *Reader) error {
-	data, err := r.Read(p.FixedHeader.RemainingLength)
+	data, err := r.Read(p.Length())
 	if err != nil {
 		return err
 	}

@@ -60,7 +60,7 @@ func (w *Writer) WriteUTF8Str(str string) (int, error) {
 	return w.Writer.Write(data)
 }
 
-func (w *Writer) WriteVariableByteInteger(l int) (int, error) {
+func (w *Writer) WriteVariableByteInteger(l VariableByteInteger) (int, error) {
 	data, err := encodeVariableByteInteger(l)
 	if err != nil {
 		return 0, err

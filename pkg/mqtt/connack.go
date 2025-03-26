@@ -19,7 +19,8 @@ func (c *Connack) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.FixedHeader.RemainingLength = len(body)
+	length := len(body)
+	c.FixedHeader.RemainingLength = VariableByteInteger(length)
 	header, err := c.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (c *Connack) Read(r *Reader) error {
 }
 
 func (c *Connack) ReadBody(r *Reader) error {
-	data, err := r.Read(c.BasePacket.FixedHeader.RemainingLength)
+	data, err := r.Read(c.Length())
 	if err != nil {
 		return err
 	}

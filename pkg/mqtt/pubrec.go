@@ -16,7 +16,7 @@ func (p *Pubrec) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.FixedHeader.RemainingLength = len(body)
+	p.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := p.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (p *Pubrec) DecodeBody(data []byte) (int, error) {
 }
 
 func (p *Pubrec) ReadBody(r *Reader) error {
-	data, err := r.Read(p.FixedHeader.RemainingLength)
+	data, err := r.Read(p.Length())
 	if err != nil {
 		return err
 	}

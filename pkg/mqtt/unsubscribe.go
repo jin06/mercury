@@ -26,7 +26,7 @@ func (u *Unsubscribe) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	u.FixedHeader.RemainingLength = len(body)
+	u.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := u.FixedHeader.Encode()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (u *Unsubscribe) Decode(data []byte) (int, error) {
 }
 
 func (u *Unsubscribe) ReadBody(r *Reader) error {
-	data, err := r.Read(u.FixedHeader.RemainingLength)
+	data, err := r.Read(u.Length())
 	if err != nil {
 		return err
 	}
