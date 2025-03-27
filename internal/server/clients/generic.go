@@ -83,6 +83,7 @@ func (c *generic) connect() (err error) {
 	if !ok {
 		return utils.ErrMalformedPacket
 	}
+	fmt.Printf("[IN] - [ClientID: %s] | %v \n", cp.ClientID, cp)
 
 	if response, err = c.handler.HandleConnect(cp); err != nil {
 		return
@@ -175,6 +176,7 @@ func (c *generic) outputLoop(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
+			fmt.Printf("[OUT] - [ClientID: %s] | %v \n", c.id, p)
 			if err := c.WritePacket(p); err != nil {
 				return err
 			}
@@ -195,6 +197,7 @@ func (c *generic) handleLoop(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
+			fmt.Printf("[IN] - [ClientID: %s] | %v \n", c.id, p)
 			switch val := p.(type) {
 			case *mqtt.Pingreq:
 				resp, err = c.handler.HandlePacket(val, c.id)

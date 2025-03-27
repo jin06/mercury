@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewPuback(header *FixedHeader, v ProtocolVersion) *Puback {
 	return &Puback{BasePacket: &BasePacket{header, v}}
 }
@@ -12,34 +14,21 @@ type Puback struct {
 	Properties   *Properties
 }
 
+func (p *Puback) String() string {
+	return fmt.Sprintf("Puback - PacketID: %d, ReasonCode: %d, ReasonString: %s, Properties: %v", p.PacketID, p.ReasonCode, p.ReasonString, p.Properties)
+}
+
 func (p *Puback) Encode() ([]byte, error) {
-	result := toHeader(PUBACK)
-	if p.Version == MQTT5 {
-		result[1] = 0b00000100
-		result = append(result, p.PacketID.Encode()...)
-		result = append(result, byte(p.ReasonCode), 0)
-		var length byte = 0
-		if reasonString, err := encodeUTF8Str(p.ReasonString); err != nil {
-			return []byte{}, nil
-		} else {
-			length += byte(len(reasonString))
-			result = append(result, reasonString...)
-		}
-
-		if userProperties, err := p.Properties.Encode(); err != nil {
-			return []byte{}, nil
-		} else {
-			length += byte(len(userProperties))
-			result = append(result, userProperties...)
-		}
-		result[5] = length
-
-	} else {
-		result[1] = 0b01000000
-		result = append(result, p.PacketID.Encode()...)
+	body, err := p.EncodeBody()
+	if err != nil {
+		return nil, err
 	}
-
-	return result, nil
+	p.FixedHeader.RemainingLength = VariableByteInteger(len(body))
+	header, err := p.FixedHeader.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return append(header, body...), nil
 }
 
 func (p *Puback) Decode(data []byte) (int, error) {
@@ -110,7 +99,6 @@ func (p *Puback) EncodeBody() ([]byte, error) {
 	// Encode Reason Code (MQTT 5.0 only)
 	if p.Version == MQTT5 {
 		data = append(data, byte(p.ReasonCode))
-
 		// Encode Properties (MQTT 5.0 only)
 		if p.Properties != nil {
 			propertiesData, err := p.Properties.Encode()
@@ -147,8 +135,4 @@ func (p *Puback) RemainingLength() int {
 		}
 	}
 	return length
-}
-
-func (p *Puback) String() string {
-	return "Puback Packet"
 }

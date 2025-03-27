@@ -47,7 +47,6 @@ func (g *generic) Deregister(c server.Client) error {
 }
 
 func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet, err error) {
-	fmt.Println(packet)
 	switch p := packet.(type) {
 	case *mqtt.Connect:
 		return g.HandleConnect(p)

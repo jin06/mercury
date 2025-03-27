@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewConnect(header *FixedHeader, v ProtocolVersion) *Connect {
 	return &Connect{BasePacket: &BasePacket{FixedHeader: header, Version: v}, Version: v}
 }
@@ -19,6 +21,11 @@ type Connect struct {
 	Username     string
 	Password     string
 	Properties   *Properties
+}
+
+func (c *Connect) String() string {
+	return fmt.Sprintf("Connect - Version: %s, ProtocolName: %s, Clean: %t, KeepAlive: %d, ClientID: %s, Username: %s, Password: %s",
+		c.Version, c.ProtocolName, c.Clean, c.KeepAlive, c.ClientID, c.Username, c.Password)
 }
 
 func (c *Connect) Response() *Connack {
@@ -292,9 +299,4 @@ func (c *Connect) decodeFlag(flag byte) {
 			Properties: new(Properties),
 		}
 	}
-	return
-}
-
-func (c *Connect) String() string {
-	return ""
 }

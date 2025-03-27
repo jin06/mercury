@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewSubscribe(header *FixedHeader, v ProtocolVersion) *Subscribe {
 	return &Subscribe{BasePacket: &BasePacket{header, v}}
 }
@@ -9,6 +11,14 @@ type Subscribe struct {
 	PacketID      PacketID
 	Subscriptions []*Subscription
 	Properties    *Properties
+}
+
+func (s *Subscribe) String() string {
+	subscriptions := make([]string, len(s.Subscriptions))
+	for i, sub := range s.Subscriptions {
+		subscriptions[i] = fmt.Sprintf("{TopicFilter: %s, QoS: %d}", sub.TopicFilter, sub.QoS)
+	}
+	return fmt.Sprintf("Subscribe - PacketID: %d, Subscriptions: [%s]", s.PacketID, fmt.Sprint(subscriptions))
 }
 
 func (s *Subscribe) Response() *Suback {
@@ -44,7 +54,7 @@ func (s *Subscribe) Decode(data []byte) (int, error) {
 }
 
 func (s *Subscribe) ReadBody(r *Reader) error {
-	data, err := r.Read(s.FixedHeader.RemainingLength.Int())
+	data, err := r.Read(s.Length())
 	if err != nil {
 		return err
 	}
@@ -63,10 +73,6 @@ func (s *Subscribe) Write(w *Writer) error {
 
 func (s *Subscribe) PacketType() PacketType {
 	return SUBSCRIBE
-}
-
-func (s *Subscribe) String() string {
-	return "Subscribe Packet"
 }
 
 func (s *Subscribe) DecodeBody(data []byte) (int, error) {

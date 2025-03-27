@@ -5,7 +5,10 @@ import (
 )
 
 func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
-	return &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
+	p := &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
+	p.Dup = header.Flags&0b00001000 != 0
+	p.Qos = QoS((header.Flags & 0b00000110) >> 1)
+	return p
 }
 
 type Publish struct {
