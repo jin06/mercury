@@ -3,7 +3,6 @@ package servers
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
@@ -126,7 +125,6 @@ func (g *generic) HandleSuback(p *mqtt.Suback) error {
 }
 
 func (g *generic) HandleUnsubscribe(p *mqtt.Unsubscribe, cid string) (resp *mqtt.Unsuback, err error) {
-	fmt.Println(123)
 	resp = p.Response()
 	return
 }
@@ -141,7 +139,7 @@ func (g *generic) HandlePingreq(p *mqtt.Pingreq, cid string) (resp *mqtt.Pingres
 }
 
 func (g *generic) HandlePingresp(p *mqtt.Pingresp) error {
-	panic("implement me")
+	return nil
 }
 
 func (g *generic) HandleDisconnect(p *mqtt.Disconnect, cid string) error {
@@ -152,10 +150,6 @@ func (g *generic) HandleDisconnect(p *mqtt.Disconnect, cid string) error {
 func (g *generic) HandleAuth(p *mqtt.Auth) error {
 	panic("implement me")
 }
-
-//	func (g *generic) HandlePacket(p mqtt.Packet) error {
-//		panic("implement me")
-//	}
 
 func (g *generic) Delivery(cid string, msg *model.Message) error {
 	if client := g.manager.Get(cid); client != nil {
