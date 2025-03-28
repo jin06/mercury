@@ -47,8 +47,6 @@ func (g *generic) Deregister(c server.Client) error {
 
 func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet, err error) {
 	switch p := packet.(type) {
-	case *mqtt.Connect:
-		return g.HandleConnect(p)
 	case *mqtt.Publish:
 		return g.HandlePublish(p, cid)
 	case *mqtt.Pingreq:
@@ -71,7 +69,10 @@ func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet
 	return
 }
 
-func (g *generic) HandleConnect(p *mqtt.Connect) (resp *mqtt.Connack, err error) {
+func (g *generic) HandleConnect(p *mqtt.Connect, c server.Client) (resp *mqtt.Connack, err error) {
+	if err = g.Register(c); err != nil {
+		return
+	}
 	resp = p.Response()
 	return
 }
@@ -81,7 +82,7 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 }
 
 func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, err error) {
-	subers := g.subManager.GetSubers(p.Topic)
+	subers := g.subManager.GetSubers(p.Topic.String())
 	for _, s := range subers {
 		msg := &model.Message{}
 		msg.FromPublish(p)

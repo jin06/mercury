@@ -17,7 +17,7 @@ type Publish struct {
 	Dup        bool
 	Qos        QoS
 	Retain     bool
-	Topic      string
+	Topic      UTF8String
 	Payload    []byte
 	Properties *Properties
 }
@@ -49,64 +49,57 @@ func (p *Publish) Response() (resp Packet, err error) {
 	return
 }
 
-func (p *Publish) Encode() ([]byte, error) {
-	// write header
-	result := toHeader(PUBLISH)
+func (p *Publish) flags() byte {
+	b := 0b00000110 & byte(p.Qos) << 1
+	if p.Retain {
+		b |= 0b00000001
+	}
 	if p.Dup {
-		result[0] |= 0b00001000
+		b |= 0b00001000
 	}
-	result[0] |= (byte(p.Qos) << 1)
-	// write topic name
-	if bytes, err := encodeUTF8Str(p.Topic); err != nil {
+	return b
+}
+
+func (p *Publish) Encode() ([]byte, error) {
+	body, err := p.EncodeBody()
+	if err != nil {
 		return nil, err
-	} else {
-		result = append(result, bytes...)
 	}
-	// write message ID
-	result = append(result, p.PacketID.Encode()...)
+	p.RemainingLength = VariableByteInteger(len(body))
+	p.FixedHeader.Flags = p.flags()
 
-	if p.Version == MQTT5 {
-		if p.Properties != nil {
-			bytes, err := p.Properties.Encode()
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, bytes...)
-		}
+	header, err := p.FixedHeader.Encode()
+	if err != nil {
+		return nil, err
 	}
-	result = append(result, p.Payload...)
-
-	return result, nil
+	return append(header, body...), nil
 }
 
 func (p *Publish) DecodeBody(data []byte) (int, error) {
 	var start int
 
 	// Decode Topic
-	topic, n, err := decodeUTF8Str(data[start:])
-	if err != nil {
+	if n, err := p.Topic.Decode(data[start:]); err != nil {
 		return start, err
+	} else {
+		start += n
 	}
-	p.Topic = topic
-	start += n
 
 	// Decode Packet ID
-	packetID, err := decodeUint16(data[start : start+2])
-	if err != nil {
+	if packetID, err := decodeUint16(data[start : start+2]); err != nil {
 		return start, err
+	} else {
+		p.PacketID = PacketID(packetID)
+		start += 2
 	}
-	p.PacketID = PacketID(packetID)
-	start += 2
 
 	// Decode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 {
-		properties := &Properties{}
-		n, err := properties.Decode(data[start:])
-		if err != nil {
+		if n, err := p.Properties.Decode(data[start:]); err != nil {
 			return start, err
+		} else {
+			start += n
 		}
-		p.Properties = properties
-		start += n
 	}
 
 	// Decode Payload

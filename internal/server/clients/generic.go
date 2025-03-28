@@ -83,21 +83,24 @@ func (c *generic) connect() (err error) {
 	if !ok {
 		return utils.ErrMalformedPacket
 	}
+
+	c.Reader.Version = cp.Version
+	c.id = cp.ClientID
+
 	fmt.Printf("[IN] - [ClientID: %s] | %v \n", cp.ClientID, cp)
 
-	if response, err = c.handler.HandleConnect(cp); err != nil {
+	if response, err = c.handler.HandleConnect(cp, c); err != nil {
 		return
 	}
 
 	if err = c.Write(response); err != nil {
 		return
 	}
-	if err = c.handler.Register(c); err != nil {
-		return
-	}
+	// if err = c.handler.Register(c); err != nil {
+	// 	return
+	// }
 	c.connected = true
-	c.id = cp.ClientID
-	c.Reader.Version = cp.Version
+
 	return nil
 }
 

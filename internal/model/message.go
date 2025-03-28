@@ -8,6 +8,7 @@ import (
 
 type Message struct {
 	PacketID               mqtt.PacketID             `json:"packet_id"`
+	Version                mqtt.ProtocolVersion      `json:"version"`
 	Dup                    bool                      `json:"dup"`
 	QoS                    mqtt.QoS                  `json:"qos"`
 	Retained               bool                      `json:"retained"`
@@ -27,9 +28,8 @@ func (m *Message) FromPublish(p *mqtt.Publish) {
 	m.Dup = p.Dup
 	m.QoS = p.Qos
 	m.Retained = p.Retain
-	m.Topic = p.Topic
+	m.Topic = p.Topic.String()
 	m.Payload = p.Payload
-	m.PayloadFormat = p.Properties.PayloadFormat
 	if p.Properties != nil {
 		m.PayloadFormat = p.Properties.PayloadFormat
 		m.ContentType = p.Properties.ContentType
@@ -45,21 +45,24 @@ func (m *Message) FromPublish(p *mqtt.Publish) {
 
 // todo
 func (m *Message) ToPublish() *mqtt.Publish {
-	return &mqtt.Publish{
-		PacketID: m.PacketID,
-		Dup:      m.Dup,
-		Qos:      m.QoS,
-		Retain:   m.Retained,
-		Topic:    m.Topic,
-		Payload:  m.Payload,
-		Properties: &mqtt.Properties{
-			PayloadFormat:          m.PayloadFormat,
-			UserProperties:         m.UserProperties,
-			ContentType:            m.ContentType,
-			CorrelationData:        m.CorrelationData,
-			MessageExpiryInterval:  m.MessageExpiry,
-			ResponseTopic:          m.ResponseTopic,
-			SubscriptionIdentifier: m.SubscriptionIdentifier,
-		},
+	header := mqtt.FixedHeader{
+		PacketType: mqtt.PUBLISH,
 	}
+	p := mqtt.NewPublish(&header, m.Version)
+	p.Dup = m.Dup
+	p.Qos = m.QoS
+	p.Retain = m.Retained
+	p.Topic = mqtt.UTF8String(m.Topic)
+	p.Payload = m.Payload
+	p.Properties = &mqtt.Properties{
+		PayloadFormat:          m.PayloadFormat,
+		UserProperties:         m.UserProperties,
+		ContentType:            m.ContentType,
+		CorrelationData:        m.CorrelationData,
+		MessageExpiryInterval:  m.MessageExpiry,
+		ResponseTopic:          m.ResponseTopic,
+		SubscriptionIdentifier: m.SubscriptionIdentifier,
+	}
+	return p
+
 }
