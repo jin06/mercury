@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewSuback(header *FixedHeader, v ProtocolVersion) *Suback {
 	return &Suback{BasePacket: &BasePacket{header, v}}
 }
@@ -9,6 +11,10 @@ type Suback struct {
 	PacketID    PacketID
 	Properties  *Properties
 	ReasonCodes []ReasonCode
+}
+
+func (s *Suback) String() string {
+	return fmt.Sprintf("Suback - PacketID: %d, ReasonCodes: %v", s.PacketID, s.ReasonCodes)
 }
 
 func (s *Suback) Encode() ([]byte, error) {
@@ -108,8 +114,4 @@ func (s *Suback) RemainingLength() int {
 	}
 	length += len(s.ReasonCodes)
 	return length
-}
-
-func (s *Suback) String() string {
-	return "Suback Packet"
 }

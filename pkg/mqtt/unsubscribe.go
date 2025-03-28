@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewUnsubscribe(header *FixedHeader, v ProtocolVersion) *Unsubscribe {
 	return &Unsubscribe{BasePacket: &BasePacket{header, v}}
 }
@@ -9,6 +11,10 @@ type Unsubscribe struct {
 	PacketID     PacketID
 	Properties   *Properties
 	TopicFilters []string // dodo
+}
+
+func (u *Unsubscribe) String() string {
+	return fmt.Sprintf("Unsubscribe - PacketID: %d, TopicFilters: %v", u.PacketID, u.TopicFilters)
 }
 
 func (u *Unsubscribe) Response() *Unsuback {
@@ -72,10 +78,6 @@ func (u *Unsubscribe) RemainingLength() int {
 		length += len(propertiesLength)
 	}
 	return length
-}
-
-func (u *Unsubscribe) String() string {
-	return "Unsubscribe Packet"
 }
 
 func (u *Unsubscribe) DecodeBody(data []byte) (int, error) {

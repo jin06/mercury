@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewConnack(header *FixedHeader, v ProtocolVersion) *Connack {
 	return &Connack{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
 }
@@ -11,6 +13,10 @@ type Connack struct {
 	Properties *Properties
 	// SessionPresent The Session Present flag informs the Client whether the Server is using Session State from a previous connection for this ClientID.
 	SessionPresent bool
+}
+
+func (c *Connack) String() string {
+	return fmt.Sprintf("Connack - ReasonCode: %d, Properties: %v, SessionPresent: %t", c.ReasonCode, c.Properties, c.SessionPresent)
 }
 
 func (c *Connack) Encode() ([]byte, error) {

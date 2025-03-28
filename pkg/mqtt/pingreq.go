@@ -8,6 +8,10 @@ type Pingreq struct {
 	*BasePacket
 }
 
+func (p *Pingreq) String() string {
+	return "Pingreq"
+}
+
 func (p *Pingreq) Response() *Pingresp {
 	return &Pingresp{
 		BasePacket: newBasePacket(PINGRESP, p.Version),
@@ -43,10 +47,6 @@ func (p *Pingreq) PacketType() PacketType {
 
 func (p *Pingreq) RemainingLength() int {
 	return 0
-}
-
-func (p *Pingreq) String() string {
-	return "Pingreq Packet"
 }
 
 func (p *Pingreq) Read(r *Reader) error {

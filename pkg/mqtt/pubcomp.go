@@ -11,6 +11,10 @@ type Pubcomp struct {
 	PacketID   PacketID
 }
 
+func (p *Pubcomp) String() string {
+	return "Pubcomp"
+}
+
 func (p *Pubcomp) Encode() ([]byte, error) {
 	body, err := p.EncodeBody()
 	if err != nil {
@@ -129,8 +133,4 @@ func (p *Pubcomp) RemainingLength() int {
 		}
 	}
 	return length
-}
-
-func (p *Pubcomp) String() string {
-	return "Pubcomp Packet"
 }

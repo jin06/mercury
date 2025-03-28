@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewPubrec(header *FixedHeader, v ProtocolVersion) *Pubrec {
 	return &Pubrec{BasePacket: &BasePacket{header, v}}
 }
@@ -9,6 +11,10 @@ type Pubrec struct {
 	PacketID   PacketID
 	ReasonCode ReasonCode
 	Properties *Properties
+}
+
+func (p *Pubrec) String() string {
+	return fmt.Sprintf("Pubrec - PacketID: %d, ReasonCode: %v", p.PacketID, p.ReasonCode)
 }
 
 func (p *Pubrec) Encode() ([]byte, error) {
@@ -129,8 +135,4 @@ func (p *Pubrec) RemainingLength() int {
 		}
 	}
 	return length
-}
-
-func (p *Pubrec) String() string {
-	return "Pubrec Packet"
 }

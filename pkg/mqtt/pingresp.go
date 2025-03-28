@@ -8,6 +8,10 @@ type Pingresp struct {
 	*BasePacket
 }
 
+func (p *Pingresp) String() string {
+	return "Pingresp"
+}
+
 func (p *Pingresp) Encode() ([]byte, error) {
 	p.FixedHeader.RemainingLength = 0
 	return p.FixedHeader.Encode()
@@ -56,8 +60,4 @@ func (p *Pingresp) PacketType() PacketType {
 
 func (p *Pingresp) RemainingLength() int {
 	return 0
-}
-
-func (p *Pingresp) String() string {
-	return "Pingresp Packet"
 }
