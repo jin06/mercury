@@ -1,7 +1,10 @@
 package mqtt
 
 func NewPubcomp(header *FixedHeader, v ProtocolVersion) *Pubcomp {
-	return &Pubcomp{BasePacket: &BasePacket{header, v}}
+	return &Pubcomp{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Pubcomp struct {

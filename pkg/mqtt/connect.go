@@ -3,7 +3,11 @@ package mqtt
 import "fmt"
 
 func NewConnect(header *FixedHeader, v ProtocolVersion) *Connect {
-	return &Connect{BasePacket: &BasePacket{FixedHeader: header, Version: v}, Version: v}
+	return &Connect{
+		BasePacket: &BasePacket{FixedHeader: header, Version: v},
+		Version:    v,
+		Properties: new(Properties),
+	}
 }
 
 type Connect struct {

@@ -3,7 +3,10 @@ package mqtt
 import "fmt"
 
 func NewSuback(header *FixedHeader, v ProtocolVersion) *Suback {
-	return &Suback{BasePacket: &BasePacket{header, v}}
+	return &Suback{
+		BasePacket: &BasePacket{header, v},
+		Properties: &Properties{},
+	}
 }
 
 type Suback struct {

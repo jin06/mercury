@@ -1,7 +1,10 @@
 package mqtt
 
 func NewPubrel(header *FixedHeader, v ProtocolVersion) *Pubrel {
-	return &Pubrel{BasePacket: &BasePacket{header, v}}
+	return &Pubrel{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Pubrel struct {

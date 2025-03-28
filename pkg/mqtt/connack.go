@@ -3,7 +3,10 @@ package mqtt
 import "fmt"
 
 func NewConnack(header *FixedHeader, v ProtocolVersion) *Connack {
-	return &Connack{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
+	return &Connack{
+		BasePacket: &BasePacket{FixedHeader: header, Version: v},
+		Properties: &Properties{},
+	}
 }
 
 type Connack struct {

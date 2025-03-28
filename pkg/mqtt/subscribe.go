@@ -3,7 +3,10 @@ package mqtt
 import "fmt"
 
 func NewSubscribe(header *FixedHeader, v ProtocolVersion) *Subscribe {
-	return &Subscribe{BasePacket: &BasePacket{header, v}}
+	return &Subscribe{
+		BasePacket: &BasePacket{header, v},
+		Properties: &Properties{},
+	}
 }
 
 type Subscribe struct {

@@ -3,7 +3,10 @@ package mqtt
 import "fmt"
 
 func NewPuback(header *FixedHeader, v ProtocolVersion) *Puback {
-	return &Puback{BasePacket: &BasePacket{header, v}}
+	return &Puback{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Puback struct {

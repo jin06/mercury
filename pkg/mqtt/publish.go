@@ -5,9 +5,13 @@ import (
 )
 
 func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
-	p := &Publish{BasePacket: &BasePacket{FixedHeader: header, Version: v}}
-	p.Dup = header.Flags&0b00001000 != 0
-	p.Qos = QoS((header.Flags & 0b00000110) >> 1)
+	p := &Publish{
+		BasePacket: &BasePacket{
+			FixedHeader: header,
+			Version:     v},
+		Properties: new(Properties),
+	}
+	p.fromFlags()
 	return p
 }
 
@@ -58,6 +62,12 @@ func (p *Publish) flags() byte {
 		b |= 0b00001000
 	}
 	return b
+}
+
+func (p *Publish) fromFlags() {
+	p.Dup = p.FixedHeader.Flags&0b00001000 != 0
+	p.Qos = QoS((p.FixedHeader.Flags & 0b00000110) >> 1)
+	p.Retain = p.FixedHeader.Flags&0b00000001 != 0
 }
 
 func (p *Publish) Encode() ([]byte, error) {

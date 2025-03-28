@@ -3,7 +3,10 @@ package mqtt
 import "fmt"
 
 func NewPubrec(header *FixedHeader, v ProtocolVersion) *Pubrec {
-	return &Pubrec{BasePacket: &BasePacket{header, v}}
+	return &Pubrec{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Pubrec struct {
