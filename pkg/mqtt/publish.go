@@ -140,14 +140,14 @@ func (p *Publish) EncodeBody() ([]byte, error) {
 	var data []byte
 
 	// Encode Topic
-	if topicData, err := encodeUTF8Str(p.Topic); err != nil {
+	if topicData, err := p.Topic.Encode(); err != nil {
 		return nil, err
 	} else {
 		data = append(data, topicData...)
 	}
 
 	// Encode Packet ID
-	data = append(data, encodePacketID(p.PacketID)...)
+	data = append(data, p.PacketID.Encode()...)
 
 	// Encode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 && p.Properties != nil {

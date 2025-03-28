@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewPubrel(header *FixedHeader, v ProtocolVersion) *Pubrel {
 	return &Pubrel{
 		BasePacket: &BasePacket{header, v},
@@ -12,6 +14,10 @@ type Pubrel struct {
 	PacketID   PacketID
 	Dup        bool
 	Properties *Properties
+}
+
+func (p *Pubrel) String() string {
+	return fmt.Sprintf("Pubrel - Dup: %t, PacketID: %d", p.Dup, p.PacketID)
 }
 
 func (p *Pubrel) Response() (resp Packet) {
@@ -49,17 +55,15 @@ func (p *Pubrel) DecodeBody(data []byte) (int, error) {
 	var start int
 
 	// Decode Packet ID
-	packetID, err := decodeUint16(data[start : start+2])
-	if err != nil {
+	if err := p.PacketID.Decode(data); err != nil {
 		return start, err
+	} else {
+		start += 2
 	}
-	p.PacketID = PacketID(packetID)
-	start += 2
 
 	// Decode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 {
 		if len(data) > start {
-			p.Properties = new(Properties)
 			n, err := p.Properties.Decode(data[start:])
 			if err != nil {
 				return start, err
@@ -127,8 +131,4 @@ func (p *Pubrel) RemainingLength() int {
 		length += len(propertiesLength)
 	}
 	return length
-}
-
-func (p *Pubrel) String() string {
-	return "Pubrecl Packet"
 }

@@ -13,3 +13,11 @@ type PacketID uint16
 func (p PacketID) Encode() []byte {
 	return []byte{byte(p >> 8), byte(p)}
 }
+
+func (p *PacketID) Decode(data []byte) error {
+	if len(data) < 2 {
+		return ErrInsufficientData
+	}
+	*p = PacketID(data[0])<<8 | PacketID(data[1])
+	return nil
+}

@@ -345,6 +345,10 @@ func (p *Properties) Encode() ([]byte, error) {
 		result = append(result, encodeBool(*p.SharedSubscriptionAvailable))
 	}
 
+	if len(result) == 0 {
+		return []byte{0}, nil
+	}
+
 	lengthBytes, err := encodeVariableByteInteger(VariableByteInteger(len(result)))
 	if err != nil {
 		return nil, err

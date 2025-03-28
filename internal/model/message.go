@@ -30,6 +30,8 @@ func (m *Message) FromPublish(p *mqtt.Publish) {
 	m.Retained = p.Retain
 	m.Topic = p.Topic.String()
 	m.Payload = p.Payload
+	m.Version = p.Version
+	m.PacketID = p.PacketID
 	if p.Properties != nil {
 		m.PayloadFormat = p.Properties.PayloadFormat
 		m.ContentType = p.Properties.ContentType
@@ -54,6 +56,8 @@ func (m *Message) ToPublish() *mqtt.Publish {
 	p.Retain = m.Retained
 	p.Topic = mqtt.UTF8String(m.Topic)
 	p.Payload = m.Payload
+	p.Version = m.Version
+	p.PacketID = m.PacketID
 	p.Properties = &mqtt.Properties{
 		PayloadFormat:          m.PayloadFormat,
 		UserProperties:         m.UserProperties,
