@@ -5,7 +5,7 @@ import "fmt"
 func NewUnsubscribe(header *FixedHeader, v ProtocolVersion) *Unsubscribe {
 	return &Unsubscribe{
 		BasePacket: &BasePacket{header, v},
-		Properties: &Properties{},
+		Properties: new(Properties),
 	}
 }
 

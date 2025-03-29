@@ -10,23 +10,23 @@ func encodeVariableByteInteger[T VariableByteInteger | int](length T) ([]byte, e
 	if length < 0 {
 		return nil, errors.New("length cannot be negative")
 	}
-
-	var result []byte
-	for length > 0 {
-		// byteValue := byte(length & 0x80)
-		byteValue := byte(length % 128)
-		length = length / 128
+	encoded := make([]byte, 0)
+	for {
+		byteVal := byte(length & 0x7F)
+		length >>= 7
 		if length > 0 {
-			byteValue |= 0x80
+			byteVal |= 0x80
 		}
-		result = append(result, byteValue)
+		encoded = append(encoded, byteVal)
+		if length == 0 {
+			break
+		}
 	}
 
-	if len(result) == 0 {
-		return []byte{0}, nil
+	if len(encoded) == 0 {
+		return []byte{0x00}, nil
 	}
-
-	return result, nil
+	return encoded, nil
 }
 
 // decodeVariableByteInteger decodes a variable-length integer from a byte slice ([]byte).

@@ -5,7 +5,7 @@ import "fmt"
 func NewSuback(header *FixedHeader, v ProtocolVersion) *Suback {
 	return &Suback{
 		BasePacket: &BasePacket{header, v},
-		Properties: &Properties{},
+		Properties: new(Properties),
 	}
 }
 

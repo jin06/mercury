@@ -11,14 +11,13 @@ func NewPuback(header *FixedHeader, v ProtocolVersion) *Puback {
 
 type Puback struct {
 	*BasePacket
-	PacketID     PacketID
-	ReasonCode   ReasonCode
-	ReasonString string
-	Properties   *Properties
+	PacketID   PacketID
+	ReasonCode ReasonCode
+	Properties *Properties
 }
 
 func (p *Puback) String() string {
-	return fmt.Sprintf("Puback - PacketID: %d, ReasonCode: %d, ReasonString: %s, Properties: %v", p.PacketID, p.ReasonCode, p.ReasonString, p.Properties)
+	return fmt.Sprintf("Puback - PacketID: %d, ReasonCode: %d, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
 }
 
 func (p *Puback) Encode() ([]byte, error) {

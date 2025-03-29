@@ -154,10 +154,10 @@ func (p *Properties) Len() uint64 {
 
 func (p *Properties) Encode() ([]byte, error) {
 	if p == nil {
-		return []byte{0}, nil
+		return encodeVariableByteInteger(0)
 	}
 	// result := []byte{0}
-	result := []byte{}
+	result := make([]byte, 0)
 
 	if p.PayloadFormat != nil {
 		result = append(result, ID_PayloadFormat)
@@ -345,15 +345,16 @@ func (p *Properties) Encode() ([]byte, error) {
 		result = append(result, encodeBool(*p.SharedSubscriptionAvailable))
 	}
 
-	if len(result) == 0 {
-		return []byte{0}, nil
-	}
+	// if len(result) == 0 {
+	// return encodeVariableByteInteger(0)
+	// }
 
-	lengthBytes, err := encodeVariableByteInteger(VariableByteInteger(len(result)))
-	if err != nil {
+	if lengthBytes, err := encodeVariableByteInteger(len(result)); err != nil {
 		return nil, err
+	} else {
+		result = append(lengthBytes, result...)
 	}
-	return append(lengthBytes, result...), nil
+	return result, nil
 }
 
 func (p *Properties) Decode(data []byte) (int, error) {

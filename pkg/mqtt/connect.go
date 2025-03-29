@@ -4,7 +4,7 @@ import "fmt"
 
 func NewConnect(header *FixedHeader, v ProtocolVersion) *Connect {
 	return &Connect{
-		BasePacket: &BasePacket{FixedHeader: header, Version: v},
+		BasePacket: &BasePacket{header, v},
 		Version:    v,
 		Properties: new(Properties),
 	}

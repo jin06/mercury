@@ -6,9 +6,7 @@ import (
 
 func NewPublish(header *FixedHeader, v ProtocolVersion) *Publish {
 	p := &Publish{
-		BasePacket: &BasePacket{
-			FixedHeader: header,
-			Version:     v},
+		BasePacket: &BasePacket{header, v},
 		Properties: new(Properties),
 	}
 	p.fromFlags()
@@ -54,20 +52,20 @@ func (p *Publish) Response() (resp Packet, err error) {
 }
 
 func (p *Publish) flags() byte {
-	b := 0b00000110 & byte(p.Qos) << 1
+	b := 0b110 & (byte(p.Qos) << 1)
 	if p.Retain {
-		b |= 0b00000001
+		b |= 0b1
 	}
 	if p.Dup {
-		b |= 0b00001000
+		b |= 0b1000
 	}
 	return b
 }
 
 func (p *Publish) fromFlags() {
-	p.Dup = p.FixedHeader.Flags&0b00001000 != 0
-	p.Qos = QoS((p.FixedHeader.Flags & 0b00000110) >> 1)
-	p.Retain = p.FixedHeader.Flags&0b00000001 != 0
+	p.Dup = p.FixedHeader.Flags&0b1000 != 0
+	p.Qos = QoS((p.FixedHeader.Flags & 0b110) >> 1)
+	p.Retain = p.FixedHeader.Flags&0b1 != 0
 }
 
 func (p *Publish) Encode() ([]byte, error) {
@@ -75,8 +73,8 @@ func (p *Publish) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.RemainingLength = VariableByteInteger(len(body))
 	p.FixedHeader.Flags = p.flags()
+	p.RemainingLength = VariableByteInteger(len(body))
 
 	header, err := p.FixedHeader.Encode()
 	if err != nil {
@@ -137,7 +135,7 @@ func (p *Publish) Write(w *Writer) error {
 }
 
 func (p *Publish) EncodeBody() ([]byte, error) {
-	var data []byte
+	data := make([]byte, 0)
 
 	// Encode Topic
 	if topicData, err := p.Topic.Encode(); err != nil {
@@ -151,11 +149,11 @@ func (p *Publish) EncodeBody() ([]byte, error) {
 
 	// Encode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 && p.Properties != nil {
-		propertiesData, err := p.Properties.Encode()
-		if err != nil {
+		if propertiesData, err := p.Properties.Encode(); err != nil {
 			return nil, err
+		} else {
+			data = append(data, propertiesData...)
 		}
-		data = append(data, propertiesData...)
 	}
 
 	// Encode Payload

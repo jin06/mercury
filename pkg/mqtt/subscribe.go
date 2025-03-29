@@ -5,7 +5,7 @@ import "fmt"
 func NewSubscribe(header *FixedHeader, v ProtocolVersion) *Subscribe {
 	return &Subscribe{
 		BasePacket: &BasePacket{header, v},
-		Properties: &Properties{},
+		Properties: new(Properties),
 	}
 }
 

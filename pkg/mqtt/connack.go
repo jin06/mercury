@@ -4,8 +4,8 @@ import "fmt"
 
 func NewConnack(header *FixedHeader, v ProtocolVersion) *Connack {
 	return &Connack{
-		BasePacket: &BasePacket{FixedHeader: header, Version: v},
-		Properties: &Properties{},
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
 	}
 }
 

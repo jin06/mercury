@@ -2,13 +2,6 @@ package mqtt
 
 import "regexp"
 
-func checkLength(start int, length int) error {
-	if start >= length {
-		return ErrBytesShorter
-	}
-	return nil
-}
-
 // ValidateMQTTTopic validates if the MQTT topic name is valid according to MQTT rules.
 func ValidateMQTTTopic(topic string) bool {
 	// Regular expression to validate MQTT topic format

@@ -1,7 +1,10 @@
 package mqtt
 
 func NewDisconnect(header *FixedHeader, v ProtocolVersion) *Disconnect {
-	return &Disconnect{BasePacket: &BasePacket{header, v}}
+	return &Disconnect{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Disconnect struct {
