@@ -156,7 +156,7 @@ func encodeUTF8(data []byte) ([]byte, error) {
 	l := len(data)
 
 	// Ensure the length fits within the 2-byte limit
-	if l > (1<<16)-1 { // Max length that can be encoded in 2 bytes
+	if l > MAXUINT16 { // Max length that can be encoded in 2 bytes
 		return nil, ErrUTFLengthTooLong
 	}
 
