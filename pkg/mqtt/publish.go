@@ -93,12 +93,12 @@ func (p *Publish) DecodeBody(data []byte) (int, error) {
 		start += n
 	}
 
-	// Decode Packet ID
-	if packetID, err := decodeUint16(data[start : start+2]); err != nil {
-		return start, err
-	} else {
-		p.PacketID = PacketID(packetID)
-		start += 2
+	if !p.Qos.Zero() {
+		if err := p.PacketID.Decode(data[start:]); err != nil {
+			return start, err
+		} else {
+			start += 2
+		}
 	}
 
 	// Decode Properties (MQTT 5.0 only)
@@ -145,8 +145,9 @@ func (p *Publish) EncodeBody() ([]byte, error) {
 	}
 
 	// Encode Packet ID
-	data = append(data, p.PacketID.Encode()...)
-
+	if !p.Qos.Zero() {
+		data = append(data, p.PacketID.Encode()...)
+	}
 	// Encode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 && p.Properties != nil {
 		if propertiesData, err := p.Properties.Encode(); err != nil {

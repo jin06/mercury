@@ -8,6 +8,10 @@ const (
 
 type QoS byte
 
+func (q QoS) Zero() bool {
+	return q == QoS0
+}
+
 type VariableHeader struct{}
 
 type Payload struct{}
