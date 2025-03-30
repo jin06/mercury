@@ -6,6 +6,10 @@ import (
 	"math"
 )
 
+const (
+	MAXUINT16 = 65535
+)
+
 func encodeVariableByteInteger[T VariableByteInteger | int](length T) ([]byte, error) {
 	if length < 0 {
 		return nil, errors.New("length cannot be negative")

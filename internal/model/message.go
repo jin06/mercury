@@ -15,7 +15,7 @@ type Message struct {
 	Topic                  string                    `json:"topic"`
 	Payload                []byte                    `json:"payload"`
 	ContentType            *string                   `json:"content_type"`
-	CorrelationData        []byte                    `json:"correlation_data"`
+	CorrelationData        *mqtt.BinaryData          `json:"correlation_data"`
 	MessageExpiry          *uint32                   `json:"message_expiry"`
 	PayloadFormat          *mqtt.PayloadFormat       `json:"payload_format"`
 	ResponseTopic          *string                   `json:"response_topic"`

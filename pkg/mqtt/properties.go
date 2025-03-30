@@ -55,7 +55,8 @@ type Properties struct {
 
 	// CorrelationData is used to correlate a response message with a request.
 	// It is typically included in the response to match a previously sent request.
-	CorrelationData []byte
+	// CorrelationData []byte
+	CorrelationData *BinaryData
 
 	// SubscriptionIdentifier is an identifier for the subscription.
 	// It can be used to relate a subscription to a specific client or purpose.
@@ -80,7 +81,7 @@ type Properties struct {
 
 	// AuthenticationData contains the data required for the client’s authentication method.
 	// This can be a password, certificate, etc., depending on the authentication method.
-	AuthenticationData []byte
+	AuthenticationData *BinaryData
 
 	// RequestProblemInformation specifies whether the client wants the broker to include problem information in responses.
 	// This can be used to indicate issues with message processing.
@@ -189,11 +190,13 @@ func (p *Properties) Encode() ([]byte, error) {
 
 	if p.CorrelationData != nil {
 		result = append(result, ID_CorrelationData)
-		encodedCorrelationData, err := encodeBinaryData(p.CorrelationData)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, encodedCorrelationData...)
+		correlationData := p.CorrelationData.Encode()
+		// encodedCorrelationData, err := encodeBinaryData(p.CorrelationData)
+		// if err != nil {
+		// return nil, err
+		// }
+		// result = append(result, encodedCorrelationData...)
+		result = append(result, correlationData...)
 	}
 
 	if p.SubscriptionIdentifier != nil {
@@ -235,11 +238,8 @@ func (p *Properties) Encode() ([]byte, error) {
 
 	if p.AuthenticationData != nil {
 		result = append(result, ID_AuthenticationData)
-		encodedAuthenticationData, err := encodeBinaryData(p.AuthenticationData)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, encodedAuthenticationData...)
+		encoded := p.AuthenticationData.Encode()
+		result = append(result, encoded...)
 	}
 
 	if p.RequestProblemInformation != nil {
@@ -388,7 +388,11 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			}
 			i += vl
 		case ID_CorrelationData:
-			if p.CorrelationData, vl, err = decodeBinaryData(data[i:]); err != nil {
+			// if p.CorrelationData, vl, err = decodeBinaryData(data[i:]); err != nil {
+			// 	return i + total, err
+			// }
+			p.CorrelationData = new(BinaryData)
+			if vl, err = p.CorrelationData.Decode(data[i:]); err != nil {
 				return i + total, err
 			}
 			i += vl
@@ -418,7 +422,11 @@ func (p *Properties) Decode(data []byte) (int, error) {
 			}
 			i += vl
 		case ID_AuthenticationData:
-			if p.AuthenticationData, vl, err = decodeBinaryData(data[i:]); err != nil {
+			// if p.AuthenticationData, vl, err = decodeBinaryData(data[i:]); err != nil {
+			// return i + total, err
+			// }
+			p.AuthenticationData = new(BinaryData)
+			if vl, err = p.AuthenticationData.Decode(data[i:]); err != nil {
 				return i + total, err
 			}
 			i += vl

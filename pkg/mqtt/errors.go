@@ -16,4 +16,5 @@ var (
 	ErrReadNotEnoughBytes = errors.New("not enough bytes read from reader")
 	ErrInvalidQoS         = errors.New("invalid QoS")
 	ErrInsufficientData   = errors.New("insufficient data")
+	ErrNotUint16          = errors.New("value out of uint16 range")
 )
