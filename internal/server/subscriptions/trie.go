@@ -24,11 +24,11 @@ func NewTrie() *trieSub {
 	}
 }
 
-func (t *trieSub) Sub(topic string, clientID string) error {
+func (t *trieSub) Sub(topic string, clientID string) (bool, error) {
 	// parts := strings.Split(topic, "/")
 	tf, err := NewTF(topic)
 	if err != nil {
-		return err
+		return false, err
 	}
 	node := t.root
 	for _, part := range tf.Parts {
@@ -43,19 +43,20 @@ func (t *trieSub) Sub(topic string, clientID string) error {
 		node = node.children[part]
 	}
 	node.mu.Lock()
+	_, has := node.subs[clientID]
 	node.subs[clientID] = tf.subscriber(clientID)
 	node.mu.Unlock()
-	return nil
+	return has, nil
 }
 
-func (t *trieSub) Unsub(topic string, clientID string) {
+func (t *trieSub) Unsub(topic string, clientID string) bool {
 	parts := strings.Split(topic, "/")
 	node := t.root
 	for _, part := range parts {
 		node.mu.RLock()
 		if _, ok := node.children[part]; !ok {
 			node.mu.RUnlock()
-			return
+			return false
 		}
 		node = node.children[part]
 		node.mu.RUnlock()
@@ -63,6 +64,7 @@ func (t *trieSub) Unsub(topic string, clientID string) {
 	node.mu.Lock()
 	delete(node.subs, clientID)
 	node.mu.Unlock()
+	return true
 }
 
 func (t *trieSub) GetSubers(topic string) []*Subscriber {

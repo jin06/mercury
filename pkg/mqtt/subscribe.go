@@ -39,6 +39,9 @@ func (s *Subscribe) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	s.FixedHeader.Flags = 0b0010
+
 	s.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := s.FixedHeader.Encode()
 	if err != nil {

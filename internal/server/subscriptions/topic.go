@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"errors"
 	"strings"
+	"time"
 )
 
 type Type byte
@@ -75,8 +76,9 @@ func (tf *TopicFilter) init() error {
 
 func (tf *TopicFilter) subscriber(clientID string) *Subscriber {
 	return &Subscriber{
-		tf.Type,
-		clientID,
-		tf.Group,
+		Type:     tf.Type,
+		ClientID: clientID,
+		Group:    tf.Group,
+		Time:     time.Now(),
 	}
 }

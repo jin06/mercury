@@ -11,13 +11,13 @@ func NewPubrel(header *FixedHeader, v ProtocolVersion) *Pubrel {
 
 type Pubrel struct {
 	*BasePacket
-	PacketID   PacketID
-	Dup        bool
+	PacketID PacketID
+	ReasonCode
 	Properties *Properties
 }
 
 func (p *Pubrel) String() string {
-	return fmt.Sprintf("Pubrel - Dup: %t, PacketID: %d", p.Dup, p.PacketID)
+	return fmt.Sprintf("Pubrel - ReasonCode: 0x%x, PacketID: %d", p.ReasonCode, p.PacketID)
 }
 
 func (p *Pubrel) Response() (resp Packet) {
@@ -34,6 +34,7 @@ func (p *Pubrel) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	p.FixedHeader.Flags = 0b0010
 	p.FixedHeader.RemainingLength = VariableByteInteger(len(body))
 	header, err := p.FixedHeader.Encode()
 	if err != nil {
@@ -63,6 +64,8 @@ func (p *Pubrel) DecodeBody(data []byte) (int, error) {
 
 	// Decode Properties (MQTT 5.0 only)
 	if p.Version == MQTT5 {
+		p.ReasonCode = ReasonCode(data[start])
+		start++
 		if len(data) > start {
 			n, err := p.Properties.Decode(data[start:])
 			if err != nil {
@@ -99,8 +102,8 @@ func (p *Pubrel) EncodeBody() ([]byte, error) {
 	// Encode Packet ID
 	data = append(data, encodePacketID(p.PacketID)...)
 
-	// Encode Properties (MQTT 5.0 only)
-	if p.Version == MQTT5 && p.Properties != nil {
+	if p.Version == MQTT5 {
+		data = append(data, byte(p.ReasonCode))
 		propertiesData, err := p.Properties.Encode()
 		if err != nil {
 			return nil, err

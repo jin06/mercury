@@ -6,22 +6,18 @@ type BinaryData struct {
 }
 
 func (b *BinaryData) Encode() []byte {
-	lengthData := encodeUint16(b.Length)
-	data := append(lengthData, b.Data...)
+	data, _ := encodeBinaryData(b.Data)
 	return data
 }
 
 func (b *BinaryData) Decode(data []byte) (int, error) {
-	if len(data) < 2 {
-		return 0, ErrBytesShorter
+	res, n, err := decodeBinaryData(data)
+	if err != nil {
+		return n, err
 	}
-	length := len(data)
-	if length > MAXUINT16 {
-		return 0, ErrNotUint16
-	}
-	b.Length = uint16(length)
-	b.Data = data[2:]
-	return 2 + length, nil
+	b.Length = uint16(len(res))
+	b.Data = res
+	return n, nil
 }
 
 func encodeBinaryData(data []byte) ([]byte, error) {
@@ -35,6 +31,9 @@ func encodeBinaryData(data []byte) ([]byte, error) {
 }
 
 func decodeBinaryData(data []byte) (res []byte, n int, err error) {
+	if len(data) < 2 {
+		return nil, 0, ErrBytesShorter
+	}
 	l, err := decodeLength(data[:2])
 	if err != nil {
 		return nil, 0, err

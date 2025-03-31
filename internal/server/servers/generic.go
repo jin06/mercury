@@ -99,6 +99,7 @@ func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, er
 }
 
 func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
+	resp = p.Response()
 	return
 }
 
@@ -113,7 +114,7 @@ func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, 
 
 func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Suback, err error) {
 	for _, sub := range p.Subscriptions {
-		if err = g.subManager.Sub(sub.TopicFilter, cid); err != nil {
+		if _, err = g.subManager.Sub(sub.TopicFilter, cid); err != nil {
 			return nil, err
 		}
 	}
@@ -126,6 +127,9 @@ func (g *generic) HandleSuback(p *mqtt.Suback) error {
 }
 
 func (g *generic) HandleUnsubscribe(p *mqtt.Unsubscribe, cid string) (resp *mqtt.Unsuback, err error) {
+	for _, v := range p.TopicFilters {
+		g.subManager.Unsub(v, cid)
+	}
 	resp = p.Response()
 	return
 }

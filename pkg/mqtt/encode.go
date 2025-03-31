@@ -294,7 +294,7 @@ func decodeUint32(data []byte) (uint32, error) {
 	if len(data) > 4 {
 		return 0, ErrBytesShorter
 	}
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		ret = ret << 8
 		ret = ret + uint32(data[i])
 	}
@@ -313,7 +313,7 @@ func decodeUint32Ptr(data []byte) (*uint32, error) {
 func encodeUint64(value uint64) []byte {
 	var data []byte
 	// Extract each byte by shifting the uint64 value and appending it to the slice
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		// Shift and mask to get each byte from most significant to least significant
 		data = append([]byte{byte(value >> (8 * (7 - i)))}, data...)
 	}
@@ -329,7 +329,7 @@ func decodeUint64(data []byte) (uint64, error) {
 		return 0, ErrBytesShorter
 	}
 	var ret uint64
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		ret = ret << 8
 		ret = ret + uint64(data[i])
 	}
