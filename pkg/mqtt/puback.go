@@ -20,6 +20,10 @@ func (p *Puback) String() string {
 	return fmt.Sprintf("Puback - PacketID: %d, ReasonCode: %d, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
 }
 
+func (p *Puback) ID() PacketID {
+	return p.PacketID
+}
+
 func (p *Puback) Encode() ([]byte, error) {
 	body, err := p.EncodeBody()
 	if err != nil {

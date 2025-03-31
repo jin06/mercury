@@ -20,6 +20,10 @@ func (u *Unsubscribe) String() string {
 	return fmt.Sprintf("Unsubscribe - PacketID: %d, TopicFilters: %v", u.PacketID, u.TopicFilters)
 }
 
+func (u *Unsubscribe) ID() PacketID {
+	return u.PacketID
+}
+
 func (u *Unsubscribe) Response() *Unsuback {
 	resp := &Unsuback{
 		BasePacket: newBasePacket(UNSUBACK, u.Version),

@@ -29,6 +29,10 @@ func (p *Publish) String() string {
 		p.Dup, p.Qos, p.Retain, p.Topic, p.PacketID, p.Payload)
 }
 
+func (p *Publish) ID() PacketID {
+	return p.PacketID
+}
+
 func (p *Publish) Response() (resp Packet, err error) {
 	switch p.Qos {
 	case QoS0:

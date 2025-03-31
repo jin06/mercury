@@ -20,6 +20,10 @@ func (p *Pubrel) String() string {
 	return fmt.Sprintf("Pubrel - ReasonCode: 0x%x, PacketID: %d", p.ReasonCode, p.PacketID)
 }
 
+func (p *Pubrel) ID() PacketID {
+	return p.PacketID
+}
+
 func (p *Pubrel) Response() (resp Packet) {
 	resp = &Pubcomp{
 		BasePacket: newBasePacket(PUBCOMP, p.Version),

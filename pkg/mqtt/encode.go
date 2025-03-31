@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	MAXUINT16 = 65535
+	MAXUINT16            = 65535
+	MAXPACKETID PacketID = 65535
 )
 
 func encodeVariableByteInteger[T VariableByteInteger | int](length T) ([]byte, error) {

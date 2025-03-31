@@ -24,6 +24,10 @@ func (s *Subscribe) String() string {
 	return fmt.Sprintf("Subscribe - PacketID: %d, Subscriptions: [%s]", s.PacketID, fmt.Sprint(subscriptions))
 }
 
+func (s *Subscribe) ID() PacketID {
+	return s.PacketID
+}
+
 func (s *Subscribe) Response() *Suback {
 	resp := &Suback{
 		BasePacket:  newBasePacket(SUBACK, s.Version),

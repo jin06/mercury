@@ -7,4 +7,5 @@ var (
 	ErrClosedChannel    = errors.New("closed channel")
 	ErrMalformedPacket  = errors.New("malformed packet")
 	ErrNotValidTopic    = errors.New("not valid topic")
+	ErrPacketIDUsed     = errors.New("packet ID is already used")
 )

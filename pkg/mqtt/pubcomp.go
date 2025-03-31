@@ -15,7 +15,11 @@ type Pubcomp struct {
 }
 
 func (p *Pubcomp) String() string {
-	return "Pubcomp"
+	return ""
+}
+
+func (p *Pubcomp) ID() PacketID {
+	return p.PacketID
 }
 
 func (p *Pubcomp) Encode() ([]byte, error) {

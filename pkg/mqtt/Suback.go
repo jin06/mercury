@@ -20,6 +20,10 @@ func (s *Suback) String() string {
 	return fmt.Sprintf("Suback - PacketID: %d, ReasonCodes: %v", s.PacketID, s.ReasonCodes)
 }
 
+func (s *Suback) ID() PacketID {
+	return s.PacketID
+}
+
 func (s *Suback) Encode() ([]byte, error) {
 	body, err := s.EncodeBody()
 	if err != nil {
