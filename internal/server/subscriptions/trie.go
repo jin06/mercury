@@ -25,45 +25,67 @@ func NewTrie() *trieSub {
 }
 
 func (t *trieSub) Sub(topic string, clientID string) (bool, error) {
-	// parts := strings.Split(topic, "/")
 	tf, err := NewTF(topic)
 	if err != nil {
 		return false, err
 	}
 	node := t.root
+	var has bool
+
 	for _, part := range tf.Parts {
 		node.mu.Lock()
-		if _, ok := node.children[part]; !ok {
-			node.children[part] = &trieNode{
+		child, ok := node.children[part]
+		if !ok {
+			child = &trieNode{
 				children: make(map[string]*trieNode),
 				subs:     make(map[string]*Subscriber),
 			}
+			node.children[part] = child
 		}
 		node.mu.Unlock()
-		node = node.children[part]
+		node = child
 	}
+
 	node.mu.Lock()
-	_, has := node.subs[clientID]
+	defer node.mu.Unlock()
+	_, has = node.subs[clientID]
 	node.subs[clientID] = tf.subscriber(clientID)
-	node.mu.Unlock()
+
 	return has, nil
 }
 
 func (t *trieSub) Unsub(topic string, clientID string) bool {
 	parts := strings.Split(topic, "/")
 	node := t.root
+	var parent *trieNode
+	var key string
+
 	for _, part := range parts {
 		node.mu.RLock()
-		if _, ok := node.children[part]; !ok {
-			node.mu.RUnlock()
+		child, ok := node.children[part]
+		node.mu.RUnlock()
+		if !ok {
 			return false
 		}
-		node = node.children[part]
-		node.mu.RUnlock()
+		parent = node
+		key = part
+		node = child
 	}
+
 	node.mu.Lock()
+	defer node.mu.Unlock()
+	if _, exists := node.subs[clientID]; !exists {
+		return false
+	}
 	delete(node.subs, clientID)
-	node.mu.Unlock()
+
+	// Clean up empty nodes
+	if len(node.subs) == 0 && len(node.children) == 0 && parent != nil {
+		parent.mu.Lock()
+		delete(parent.children, key)
+		parent.mu.Unlock()
+	}
+
 	return true
 }
 
