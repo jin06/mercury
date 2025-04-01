@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 func NewPubcomp(header *FixedHeader, v ProtocolVersion) *Pubcomp {
 	return &Pubcomp{
 		BasePacket: &BasePacket{header, v},
@@ -15,7 +17,7 @@ type Pubcomp struct {
 }
 
 func (p *Pubcomp) String() string {
-	return ""
+	return fmt.Sprintf("Pubcomp PacketID: %d, ReasonCode: %d, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
 }
 
 func (p *Pubcomp) ID() PacketID {

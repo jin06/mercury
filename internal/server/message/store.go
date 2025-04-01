@@ -1,4 +1,4 @@
-package servers
+package message
 
 import (
 	"sync"
@@ -10,6 +10,10 @@ import (
 )
 
 type Store interface {
+	Pop(p *model.Message) (mqtt.PacketID, error)
+	Rec(pid mqtt.PacketID) (bool, error)
+	Ack(pid mqtt.PacketID) (bool, error)
+	DiscardExpiry() error
 }
 
 func newRingBufferStore() *ringBufferStore {
@@ -38,7 +42,7 @@ func (s *ringBufferStore) close() error {
 	return nil
 }
 
-func (s *ringBufferStore) PopPacketID(p *model.Message) (mqtt.PacketID, error) {
+func (s *ringBufferStore) Pop(p *model.Message) (mqtt.PacketID, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[s.nextFreeID] == nil { // 说明该ID尚未使用
@@ -51,6 +55,28 @@ func (s *ringBufferStore) PopPacketID(p *model.Message) (mqtt.PacketID, error) {
 		return id, nil
 	}
 	return 0, utils.ErrPacketIDUsed
+}
+
+func (s *ringBufferStore) Rec(pid mqtt.PacketID) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.used[pid] != nil {
+		s.used[pid].State = model.RecState
+		return true, nil
+	}
+	return false, nil
+}
+
+func (s *ringBufferStore) Ack(pid mqtt.PacketID) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var has bool
+	if s.used[pid] != nil {
+		s.used[pid] = nil
+		has = true
+	}
+	return has, nil
+
 }
 
 func (s *ringBufferStore) DiscardExpiry() error {

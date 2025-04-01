@@ -6,6 +6,7 @@ import (
 
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
+	"github.com/jin06/mercury/internal/server/message"
 	"github.com/jin06/mercury/internal/server/subscriptions"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
@@ -14,15 +15,15 @@ func newGeneric() *generic {
 	server := &generic{
 		manager:    server.NewManager(),
 		subManager: subscriptions.NewTrie(),
+		msgManager: *message.NewManager(),
 	}
-	// server.delivery = newSingle(server.subManager)
 	return server
 }
 
 type generic struct {
 	manager    *server.Manager
 	subManager subscriptions.SubManager
-	// delivery   Delivery // remove delivery or not
+	msgManager message.Manager
 }
 
 func (g *generic) Run(ctx context.Context) error {
@@ -87,17 +88,25 @@ func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, 
 		// todo
 		msg := model.NewMessage(p, cid, s.ClientID)
 		msg.Publish.PacketID = g.manager.GetPacketID()
-		g.Delivery(s.ClientID, msg)
+		if _, err := g.msgManager.Pop(msg); err != nil {
+			return nil, err
+		}
+		go g.Delivery(s.ClientID, msg)
 	}
 	resp, err = p.Response()
 	return
 }
 
 func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, err error) {
+	_, err = g.msgManager.Ack(cid, p.ID())
 	return
 }
 
 func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
+	_, err = g.msgManager.Rec(cid, p.PacketID)
+	if err != nil {
+		return
+	}
 	resp = p.Response()
 	return
 }
@@ -108,6 +117,7 @@ func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, er
 }
 
 func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, err error) {
+	_, err = g.msgManager.Ack(cid, p.ID())
 	return
 }
 
