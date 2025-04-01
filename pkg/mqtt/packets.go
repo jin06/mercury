@@ -31,8 +31,3 @@ type Packet interface {
 	// Only body
 	WriteBody(*Writer) error
 }
-
-type MessagePacket interface {
-	Packet
-	ID() PacketID
-}

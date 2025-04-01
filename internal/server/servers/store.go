@@ -9,7 +9,8 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-type Store interface{}
+type Store interface {
+}
 
 func newRingBufferStore() *ringBufferStore {
 	return &ringBufferStore{
