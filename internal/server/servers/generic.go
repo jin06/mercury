@@ -84,10 +84,9 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, err error) {
 	subers := g.subManager.GetSubers(p.Topic.String())
 	for _, s := range subers {
-		msg := &model.Message{}
-		msg.FromPublish(p)
 		// todo
-		msg.PacketID = g.manager.GetPacketID()
+		msg := model.NewMessage(p, cid, s.ClientID)
+		msg.Publish.PacketID = g.manager.GetPacketID()
 		g.Delivery(s.ClientID, msg)
 	}
 	resp, err = p.Response()
@@ -158,7 +157,7 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 
 func (g *generic) Delivery(cid string, msg *model.Message) error {
 	if client := g.manager.Get(cid); client != nil {
-		return client.Write(msg.ToPublish())
+		return client.Write(msg.Publish)
 	}
 	return nil
 }
