@@ -29,9 +29,9 @@ func Parse(path string) (*Config, error) {
 }
 
 type Config struct {
-	Listeners    []Listener   `yaml:"listeners"`
-	ServerConfig ServerConfig `yaml:"server_config"`
-	DBConfig     DBConfig     `yaml:"db"`
+	Listeners  []Listener `yaml:"listeners"`
+	MQTTConfig MQTTConfig `yaml:"mqtt"`
+	DBConfig   DBConfig   `yaml:"db"`
 }
 
 type Listener struct {
@@ -39,11 +39,12 @@ type Listener struct {
 	Addr string `yaml:"addr"`
 }
 
-type ServerConfig struct {
+type MQTTConfig struct {
 	// MaxConnections is the maximum number of connections the server will accept.
 	MaxConnections int `yaml:"max_connections"`
 	// MessageDeliveryTimeout is the maximum time in seconds the server will wait for a message to be delivered.
 	MessageDeliveryTimeout time.Duration `yaml:"message_delivery_timeout"`
+	MessageExpiryInterval  time.Duration `yaml:"message_expiry_interval"`
 }
 
 type DBConfig struct {

@@ -2,6 +2,10 @@ listeners:
   - type: tcp
     addr: 0.0.0.0:1883
 
-server_config:
+mqtt:
+# Specifies the maximum time (in seconds) that a retained or undelivered 
+# QoS 1/QoS 2 message will remain in the broker before being discarded. 
+# If the message is not delivered within this interval, it will be removed.
+  message_expiry_interval: 60s
   max_connections: 1000
   message_delivery_timeout: 10s

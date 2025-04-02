@@ -21,12 +21,12 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 		Connection: mqtt.NewConnection(conn),
 		stopping:   make(chan struct{}),
 		closed:     make(chan struct{}),
-		options:    Options{},
+		options:    DefaultOptions(),
 		input:      make(chan mqtt.Packet, 2000),
 		output:     make(chan mqtt.Packet, 2000),
 		uuid:       uuid.New().String(),
 		keep:       time.Now(),
-		packets:    map[mqtt.PacketID]*mqtt.Publish{},
+		db:         newRecordDB(),
 	}
 	return &c
 }
@@ -36,18 +36,19 @@ type generic struct {
 	*mqtt.Connection
 	handler   server.Server
 	connected bool
-	options   Options
+	options   *Options
 	stopping  chan struct{}
 	stopOnce  sync.Once
 	closed    chan struct{}
 	disOnce   sync.Once
 	err       error // first error that occurs exits the client
 	// packet channels
-	input   chan mqtt.Packet
-	output  chan mqtt.Packet
-	uuid    string
-	keep    time.Time
-	packets map[mqtt.PacketID]*mqtt.Publish
+	input         chan mqtt.Packet
+	output        chan mqtt.Packet
+	uuid          string
+	keep          time.Time
+	db            *recordDB
+	connectedTime time.Time
 }
 
 func (c *generic) ClientID() string {
@@ -98,10 +99,9 @@ func (c *generic) connect() (err error) {
 	if err = c.Write(response); err != nil {
 		return
 	}
-	// if err = c.handler.Register(c); err != nil {
-	// 	return
-	// }
+
 	c.connected = true
+	c.connectedTime = time.Now()
 
 	return nil
 }
@@ -210,9 +210,7 @@ func (c *generic) handleLoop(ctx context.Context) error {
 				resp, err = c.handler.HandlePacket(val, c.id)
 				if err == nil {
 					if val.Qos == mqtt.QoS2 {
-						if _, ok := c.packets[val.ID()]; !ok {
-							c.packets[val.ID()] = val
-						}
+						c.db.save(val, resp)
 					}
 				}
 			case *mqtt.Pubrec:
@@ -221,14 +219,9 @@ func (c *generic) handleLoop(ctx context.Context) error {
 				if resp, err = c.handler.HandlePacket(val, c.id); err != nil {
 					break
 				}
-				pub, ok := c.packets[val.ID()]
-				if !ok {
-					break
-				}
-				if err = c.handler.DeliveryPublish(c.id, pub); err != nil {
-					break
-				}
-				delete(c.packets, val.ID())
+				err = c.db.delivery(val.PacketID, func(p *mqtt.Publish) error {
+					return c.handler.DeliveryPublish(c.id, p)
+				})
 			case *mqtt.Pubcomp:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Subscribe:
