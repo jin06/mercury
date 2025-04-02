@@ -23,12 +23,12 @@ type recordDB struct {
 func (db *recordDB) iter(f func(mqtt.Packet) error) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	for _, record := range  db.records {
+	for _, record := range db.records {
 		if err := f(record.response); err != nil {
-			return err 
+			return err
 		}
 	}
-	return nil 
+	return nil
 }
 
 func (db *recordDB) close() {
@@ -60,18 +60,18 @@ func (db *recordDB) delivery(id mqtt.PacketID, f func(*mqtt.Publish) error) (err
 
 func newRecord(p *mqtt.Publish, response mqtt.Packet) *pubRecord {
 	return &pubRecord{
-		content: p,
-		response: 
-		receive: time.Now(),
-		send:    time.Now(),
-		times:   1,
+		content:  p,
+		response: response,
+		receive:  time.Now(),
+		send:     time.Now(),
+		times:    1,
 	}
 }
 
 type pubRecord struct {
-	content *mqtt.Publish
+	content  *mqtt.Publish
 	response mqtt.Packet
-	receive time.Time
-	send    time.Time
-	times   int
+	receive  time.Time
+	send     time.Time
+	times    int
 }
