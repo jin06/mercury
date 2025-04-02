@@ -17,7 +17,7 @@ type Pubrel struct {
 }
 
 func (p *Pubrel) String() string {
-	return fmt.Sprintf("Pubrel - ReasonCode: 0x%x, PacketID: %d", p.ReasonCode, p.PacketID)
+	return fmt.Sprintf("Pubrel - PacketID: %v, ReasonCode: %v", p.PacketID, p.ReasonCode)
 }
 
 func (p *Pubrel) ID() PacketID {

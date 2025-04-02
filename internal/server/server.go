@@ -10,5 +10,6 @@ type Server interface {
 	Deregister(client Client) error
 	HandlePacket(packet mqtt.Packet, cid string) (response mqtt.Packet, err error)
 	HandleConnect(p *mqtt.Connect, c Client) (resp *mqtt.Connack, err error)
-	Delivery(cid string, msg *model.Message) error
+	DeliveryPublish(cid string, p *mqtt.Publish) error
+	DeliveryOne(cid string, msg *model.Message) error
 }

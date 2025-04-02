@@ -17,7 +17,7 @@ type Pubrec struct {
 }
 
 func (p *Pubrec) String() string {
-	return fmt.Sprintf("Pubrec - PacketID: %d, ReasonCode: 0x%x", p.PacketID, p.ReasonCode)
+	return fmt.Sprintf("Pubrec - PacketID: %d, ReasonCode: %v", p.PacketID, p.ReasonCode)
 }
 
 func (p *Pubrec) ID() PacketID {
@@ -26,7 +26,7 @@ func (p *Pubrec) ID() PacketID {
 
 func (p *Pubrec) Response() (resp Packet) {
 	resp = &Pubrel{
-		BasePacket: newBasePacket(PUBREC, p.Version),
+		BasePacket: newBasePacket(PUBREL, p.Version),
 		PacketID:   p.PacketID,
 		ReasonCode: V5_SUCCESS,
 	}

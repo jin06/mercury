@@ -12,6 +12,10 @@ func (q QoS) Zero() bool {
 	return q == QoS0
 }
 
+func (q QoS) NotZero() bool {
+	return q != QoS0
+}
+
 // Packet for mqtt packet
 type Packet interface {
 	// Encode all packet with header

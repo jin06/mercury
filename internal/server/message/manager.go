@@ -50,7 +50,7 @@ func (m *Manager) Set(cid string) error {
 	if _, ok := m.clients[cid]; ok {
 		return errors.New("exist cid")
 	}
-	m.clients[cid] = newRingBufferStore()
+	m.clients[cid] = NewRingBufferStore()
 	return nil
 }
 

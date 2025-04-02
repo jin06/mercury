@@ -17,7 +17,7 @@ type Pubcomp struct {
 }
 
 func (p *Pubcomp) String() string {
-	return fmt.Sprintf("Pubcomp PacketID: %d, ReasonCode: %d, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
+	return fmt.Sprintf("Pubcomp - PacketID: %v, ReasonCode: %v, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
 }
 
 func (p *Pubcomp) ID() PacketID {

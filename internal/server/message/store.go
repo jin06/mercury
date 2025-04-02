@@ -14,9 +14,11 @@ type Store interface {
 	Rec(pid mqtt.PacketID) (bool, error)
 	Ack(pid mqtt.PacketID) (bool, error)
 	DiscardExpiry() error
+	Save(p *model.Message) (err error)
+	Change(id mqtt.PacketID, state model.MessageState) error
 }
 
-func newRingBufferStore() *ringBufferStore {
+func NewRingBufferStore() *ringBufferStore {
 	return &ringBufferStore{
 		used:       make([]*model.Message, mqtt.MAXPACKETID),
 		nextFreeID: 1,
@@ -61,7 +63,7 @@ func (s *ringBufferStore) Rec(pid mqtt.PacketID) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[pid] != nil {
-		s.used[pid].State = model.RecState
+		s.used[pid].State = model.ReleaseState
 		return true, nil
 	}
 	return false, nil
@@ -76,7 +78,6 @@ func (s *ringBufferStore) Ack(pid mqtt.PacketID) (bool, error) {
 		has = true
 	}
 	return has, nil
-
 }
 
 func (s *ringBufferStore) DiscardExpiry() error {
@@ -99,5 +100,25 @@ func (s *ringBufferStore) DiscardExpiry() error {
 			s.used[id] = nil
 		}
 	}
+	return nil
+}
+
+func (s *ringBufferStore) Save(p *model.Message) (err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.used[p.Publish.ID()] != nil {
+		return utils.ErrPacketIDUsed
+	}
+	s.used[p.Publish.ID()] = p
+	return nil
+}
+
+func (s *ringBufferStore) Change(id mqtt.PacketID, state model.MessageState) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.used[id] == nil {
+		return utils.ErrPacketIDNotExist
+	}
+	s.used[id].State = state
 	return nil
 }

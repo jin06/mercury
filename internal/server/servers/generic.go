@@ -83,15 +83,10 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 }
 
 func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, err error) {
-	subers := g.subManager.GetSubers(p.Topic.String())
-	for _, s := range subers {
-		// todo
-		msg := model.NewMessage(p, cid, s.ClientID)
-		msg.Publish.PacketID = g.manager.GetPacketID()
-		if _, err := g.msgManager.Pop(msg); err != nil {
-			return nil, err
+	if p.Qos == mqtt.QoS0 || p.Qos == mqtt.QoS1 {
+		if err = g.DeliveryPublish(cid, p); err != nil {
+			return
 		}
-		go g.Delivery(s.ClientID, msg)
 	}
 	resp, err = p.Response()
 	return
@@ -104,9 +99,6 @@ func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, er
 
 func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
 	_, err = g.msgManager.Rec(cid, p.PacketID)
-	if err != nil {
-		return
-	}
 	resp = p.Response()
 	return
 }
@@ -165,7 +157,20 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 	panic("implement me")
 }
 
-func (g *generic) Delivery(cid string, msg *model.Message) error {
+func (g *generic) DeliveryPublish(cid string, p *mqtt.Publish) error {
+	subers := g.subManager.GetSubers(p.Topic.String())
+	for _, s := range subers {
+		msg := model.NewMessage(p, cid, s.ClientID)
+		msg.Publish.PacketID = g.manager.GetPacketID()
+		if _, err := g.msgManager.Pop(msg); err != nil {
+			return err
+		}
+		go g.DeliveryOne(s.ClientID, msg)
+	}
+	return nil
+}
+
+func (g *generic) DeliveryOne(cid string, msg *model.Message) error {
 	if client := g.manager.Get(cid); client != nil {
 		return client.Write(msg.Publish)
 	}

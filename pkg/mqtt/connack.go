@@ -19,7 +19,7 @@ type Connack struct {
 }
 
 func (c *Connack) String() string {
-	return fmt.Sprintf("Connack - ReasonCode: %d, Properties: %v, SessionPresent: %t", c.ReasonCode, c.Properties, c.SessionPresent)
+	return fmt.Sprintf("Connack - ReasonCode: %v, Properties: %v, SessionPresent: %t", c.ReasonCode, c.Properties, c.SessionPresent)
 }
 
 func (c *Connack) Encode() ([]byte, error) {

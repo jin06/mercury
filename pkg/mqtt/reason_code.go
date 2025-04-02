@@ -1,6 +1,12 @@
 package mqtt
 
+import "fmt"
+
 type ReasonCode byte
+
+func (r *ReasonCode) String() string {
+	return fmt.Sprintf("%#x", *r)
+}
 
 type Error struct {
 	code ReasonCode

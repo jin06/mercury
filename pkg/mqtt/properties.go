@@ -1,5 +1,7 @@
 package mqtt
 
+import "fmt"
+
 const (
 	ID_PayloadFormat                   byte = 0x01
 	ID_MessageExpiryInterval           byte = 0x02
@@ -515,4 +517,8 @@ func (p *Properties) Decode(data []byte) (int, error) {
 		}
 	}
 	return n + total, nil
+}
+
+func (p *Properties) String() string {
+	return fmt.Sprintf("%v", *p)
 }

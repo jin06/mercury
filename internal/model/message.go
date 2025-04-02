@@ -9,10 +9,11 @@ import (
 type MessageState byte
 
 const (
-	ReadyState MessageState = 0
-	PubState   MessageState = 1
-	RecState   MessageState = 1
-	AckState   MessageState = 1
+	ReadyState    MessageState = 0
+	PubState      MessageState = 1
+	ReceivedState MessageState = 2
+	ReleaseState  MessageState = 3
+	AckState      MessageState = 4
 )
 
 type Message struct {

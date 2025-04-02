@@ -26,6 +26,7 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 		output:     make(chan mqtt.Packet, 2000),
 		uuid:       uuid.New().String(),
 		keep:       time.Now(),
+		packets:    map[mqtt.PacketID]*mqtt.Publish{},
 	}
 	return &c
 }
@@ -42,10 +43,11 @@ type generic struct {
 	disOnce   sync.Once
 	err       error // first error that occurs exits the client
 	// packet channels
-	input  chan mqtt.Packet
-	output chan mqtt.Packet
-	uuid   string
-	keep   time.Time
+	input   chan mqtt.Packet
+	output  chan mqtt.Packet
+	uuid    string
+	keep    time.Time
+	packets map[mqtt.PacketID]*mqtt.Publish
 }
 
 func (c *generic) ClientID() string {
@@ -87,7 +89,7 @@ func (c *generic) connect() (err error) {
 	c.Reader.Version = cp.Version
 	c.id = cp.ClientID
 
-	fmt.Printf("[IN] - [ClientID: %s] | %v \n", cp.ClientID, cp)
+	fmt.Printf("[IN] - [%s] | %v \n", cp.ClientID, cp)
 
 	if response, err = c.handler.HandleConnect(cp, c); err != nil {
 		return
@@ -179,7 +181,7 @@ func (c *generic) outputLoop(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			fmt.Printf("[OUT] - [ClientID: %s] | %v \n", c.id, p)
+			fmt.Printf("[OUT] - [%s] | %v \n", c.id, p)
 			if err := c.WritePacket(p); err != nil {
 				return err
 			}
@@ -206,10 +208,27 @@ func (c *generic) handleLoop(ctx context.Context) error {
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Publish:
 				resp, err = c.handler.HandlePacket(val, c.id)
+				if err == nil {
+					if val.Qos == mqtt.QoS2 {
+						if _, ok := c.packets[val.ID()]; !ok {
+							c.packets[val.ID()] = val
+						}
+					}
+				}
 			case *mqtt.Pubrec:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrel:
-				resp, err = c.handler.HandlePacket(val, c.id)
+				if resp, err = c.handler.HandlePacket(val, c.id); err != nil {
+					break
+				}
+				pub, ok := c.packets[val.ID()]
+				if !ok {
+					break
+				}
+				if err = c.handler.DeliveryPublish(c.id, pub); err != nil {
+					break
+				}
+				delete(c.packets, val.ID())
 			case *mqtt.Pubcomp:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Subscribe:
