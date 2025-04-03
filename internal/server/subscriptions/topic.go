@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/jin06/mercury/internal/utils"
 )
 
 type Type byte
@@ -35,21 +37,21 @@ type TopicFilter struct {
 
 func (tf *TopicFilter) valid() error {
 	if len(tf.RawName) == 0 {
-		return errors.New("topic name cannot be empty")
+		return utils.ErrNotValidTopic
 	}
-	if strings.Contains(tf.RawName, "#") && !strings.HasSuffix(tf.RawName, "/#") {
-		return errors.New("invalid use of wildcard '#' in topic name")
-	}
-	if strings.Contains(tf.RawName, "+") {
-		segments := strings.Split(tf.RawName, "/")
-		for _, segment := range segments {
-			if segment == "+" && len(segment) != 1 {
-				return errors.New("invalid use of wildcard '+' in topic name")
+	levels := strings.Split(tf.RawName, "/")
+	for i, level := range levels {
+		if strings.Contains(level, "+") && len(level) != 1 {
+			return utils.ErrNotValidTopic
+		}
+		if strings.Contains(level, "#") {
+			if len(level) != 1 {
+				return utils.ErrNotValidTopic
+			}
+			if len(levels)-1 > i {
+				return utils.ErrNotValidTopic
 			}
 		}
-	}
-	if strings.Contains(tf.RawName, "//") {
-		return errors.New("topic name cannot contain empty levels")
 	}
 	return nil
 }
