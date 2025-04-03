@@ -147,6 +147,14 @@ func (c *generic) runloop(ctx context.Context) error {
 			return
 		}
 	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := c.recordLoop(ctx); err != nil {
+			c.stop(err)
+			return
+		}
+	}()
 	wg.Wait()
 	return nil
 }
@@ -306,4 +314,20 @@ func (c *generic) Close(ctx context.Context) (err error) {
 	}
 	err = c.handler.Deregister(c)
 	return
+}
+
+func (c *generic) recordLoop(ctx context.Context) error {
+	ticker := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			c.db.iter(c.Write)
+		case <-c.stopping:
+			return nil
+		case <-c.closed:
+			return nil
+		}
+	}
 }

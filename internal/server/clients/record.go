@@ -10,14 +10,12 @@ import (
 func newRecordDB() *recordDB {
 	return &recordDB{
 		records: make(map[mqtt.PacketID]*pubRecord),
-		closing: make(chan struct{}),
 	}
 }
 
 type recordDB struct {
 	mu      sync.RWMutex
 	records map[mqtt.PacketID]*pubRecord
-	closing chan struct{}
 }
 
 func (db *recordDB) iter(f func(mqtt.Packet) error) error {
@@ -29,10 +27,6 @@ func (db *recordDB) iter(f func(mqtt.Packet) error) error {
 		}
 	}
 	return nil
-}
-
-func (db *recordDB) close() {
-	close(db.closing)
 }
 
 func (db *recordDB) save(p *mqtt.Publish, response mqtt.Packet) {
