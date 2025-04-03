@@ -522,3 +522,39 @@ func (p *Properties) Decode(data []byte) (int, error) {
 func (p *Properties) String() string {
 	return fmt.Sprintf("%v", *p)
 }
+
+func (p *Properties) Clone() *Properties {
+	if p == nil {
+		return nil
+	}
+	clone := &Properties{
+		PayloadFormat:                   cloneBytePtr(p.PayloadFormat),
+		MessageExpiryInterval:           cloneUint32Ptr(p.MessageExpiryInterval),
+		ContentType:                     cloneStringPtr(p.ContentType),
+		ResponseTopic:                   cloneStringPtr(p.ResponseTopic),
+		CorrelationData:                 p.CorrelationData.Clone(),
+		SubscriptionIdentifier:          p.SubscriptionIdentifier.Clone(),
+		SessionExpiryInterval:           cloneUint32Ptr(p.SessionExpiryInterval),
+		AssignedClientID:                cloneStringPtr(p.AssignedClientID),
+		ServerKeepAlive:                 cloneUint16Ptr(p.ServerKeepAlive),
+		AuthenticationMethod:            cloneStringPtr(p.AuthenticationMethod),
+		AuthenticationData:              p.AuthenticationData.Clone(),
+		RequestProblemInformation:       cloneBoolPtr(p.RequestProblemInformation),
+		WillDelayInterval:               cloneUint32Ptr(p.WillDelayInterval),
+		RequestResponseInformation:      cloneBoolPtr(p.RequestResponseInformation),
+		ResponseInformation:             cloneStringPtr(p.ResponseInformation),
+		ServerReference:                 cloneStringPtr(p.ServerReference),
+		ReasonString:                    cloneStringPtr(p.ReasonString),
+		ReceiveMaximum:                  cloneUint16Ptr(p.ReceiveMaximum),
+		TopicAliasMaximum:               cloneUint16Ptr(p.TopicAliasMaximum),
+		TopicAlias:                      cloneUint16Ptr(p.TopicAlias),
+		MaximumQoS:                      cloneQoSPtr(p.MaximumQoS),
+		RetainAvailable:                 cloneBoolPtr(p.RetainAvailable),
+		UserProperties:                  cloneUserProperties(p.UserProperties),
+		MaximumPacketSize:               cloneUint32Ptr(p.MaximumPacketSize),
+		WildcardSubscriptionAvailable:   cloneBoolPtr(p.WildcardSubscriptionAvailable),
+		SubscriptionIdentifierAvailable: cloneBoolPtr(p.SubscriptionIdentifierAvailable),
+		SharedSubscriptionAvailable:     cloneBoolPtr(p.SharedSubscriptionAvailable),
+	}
+	return clone
+}

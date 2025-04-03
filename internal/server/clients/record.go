@@ -40,7 +40,7 @@ func (db *recordDB) save(p *mqtt.Publish, response mqtt.Packet) {
 		db.records[p.ID()] = newRecord(p, response)
 	}
 }
-func (db *recordDB) delivery(id mqtt.PacketID, f func(*mqtt.Publish) error) (err error) {
+func (db *recordDB) dispatch(id mqtt.PacketID, f func(*mqtt.Publish) error) (err error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if record, ok := db.records[id]; ok {

@@ -4,23 +4,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 type Store interface {
-	Pop(p *model.Message) (mqtt.PacketID, error)
-	Rec(pid mqtt.PacketID) (bool, error)
-	Ack(pid mqtt.PacketID) (bool, error)
-	DiscardExpiry() error
-	Save(p *model.Message) (err error)
-	Change(id mqtt.PacketID, state model.MessageState) error
+	Save(p *mqtt.Publish, source string, dest string) (*Record, error)
+	Delete(pid mqtt.PacketID) (bool, error)
+	Change(id mqtt.PacketID, state State) error
 }
 
 func NewRingBufferStore() *ringBufferStore {
 	return &ringBufferStore{
-		used:       make([]*model.Message, mqtt.MAXPACKETID),
+		used:       make([]*Record, mqtt.MAXPACKETID),
 		nextFreeID: 1,
 		max:        mqtt.MAXPACKETID,
 		expiry:     time.Hour * 24,
@@ -28,7 +24,7 @@ func NewRingBufferStore() *ringBufferStore {
 }
 
 type ringBufferStore struct {
-	used       []*model.Message
+	used       []*Record
 	nextFreeID mqtt.PacketID
 	max        mqtt.PacketID
 	mu         sync.Mutex
@@ -44,32 +40,27 @@ func (s *ringBufferStore) close() error {
 	return nil
 }
 
-func (s *ringBufferStore) Pop(p *model.Message) (mqtt.PacketID, error) {
+func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*Record, error) {
+	if p.Qos.Zero() {
+		return nil, nil
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.used[s.nextFreeID] == nil { // 说明该ID尚未使用
+	if s.used[s.nextFreeID] == nil {
 		id := s.nextFreeID
-		s.nextFreeID++
-		if s.nextFreeID > s.max {
+		if s.nextFreeID++; s.nextFreeID > s.max {
 			s.nextFreeID = 1
 		}
-		s.used[id] = p
-		return id, nil
+		np := p.Clone()
+		np.PacketID = id
+		r := NewRecord(np, source, dest)
+		s.used[id] = NewRecord(np, source, dest)
+		return r, nil
 	}
-	return 0, utils.ErrPacketIDUsed
+	return nil, utils.ErrPacketIDUsed
 }
 
-func (s *ringBufferStore) Rec(pid mqtt.PacketID) (bool, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.used[pid] != nil {
-		s.used[pid].State = model.ReleaseState
-		return true, nil
-	}
-	return false, nil
-}
-
-func (s *ringBufferStore) Ack(pid mqtt.PacketID) (bool, error) {
+func (s *ringBufferStore) Delete(pid mqtt.PacketID) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var has bool
@@ -80,40 +71,7 @@ func (s *ringBufferStore) Ack(pid mqtt.PacketID) (bool, error) {
 	return has, nil
 }
 
-func (s *ringBufferStore) DiscardExpiry() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	now := time.Now()
-
-	for id, msg := range s.used {
-		if msg == nil {
-			continue
-		}
-		expiry := s.expiry
-		if msg.Publish.Properties != nil && msg.Publish.Properties.MessageExpiryInterval != nil {
-			if *msg.Publish.Properties.MessageExpiryInterval != 0 {
-				expiry = time.Duration(*msg.Publish.Properties.MessageExpiryInterval) * time.Second
-			}
-		}
-		if now.Unix()-msg.Time.Unix() > int64(expiry.Seconds()) {
-			s.used[id] = nil
-		}
-	}
-	return nil
-}
-
-func (s *ringBufferStore) Save(p *model.Message) (err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.used[p.Publish.ID()] != nil {
-		return utils.ErrPacketIDUsed
-	}
-	s.used[p.Publish.ID()] = p
-	return nil
-}
-
-func (s *ringBufferStore) Change(id mqtt.PacketID, state model.MessageState) error {
+func (s *ringBufferStore) Change(id mqtt.PacketID, state State) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[id] == nil {

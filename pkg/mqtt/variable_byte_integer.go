@@ -2,6 +2,14 @@ package mqtt
 
 type VariableByteInteger int
 
+func (v *VariableByteInteger) Clone() *VariableByteInteger {
+	if v == nil {
+		return nil
+	}
+	clone := *v
+	return &clone
+}
+
 func (v VariableByteInteger) Encode() ([]byte, error) {
 	return encodeVariableByteInteger(v)
 }

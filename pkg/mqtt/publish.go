@@ -24,6 +24,26 @@ type Publish struct {
 	Properties *Properties
 }
 
+func (p *Publish) Clone() *Publish {
+	clone := &Publish{
+		BasePacket: p.BasePacket.Clone(),
+		PacketID:   p.PacketID,
+		Dup:        p.Dup,
+		Qos:        p.Qos,
+		Retain:     p.Retain,
+		Topic:      p.Topic,
+		Payload:    append([]byte{}, p.Payload...), // Deep copy of Payload
+		Properties: nil,
+	}
+
+	// Deep copy Properties if they exist
+	if p.Properties != nil {
+		clone.Properties = p.Properties.Clone()
+	}
+
+	return clone
+}
+
 func (p *Publish) String() string {
 	return fmt.Sprintf("Publish - Dup: %t, Qos: %d, Retain: %t, Topic: %s, PacketID: %d, Payload: %s",
 		p.Dup, p.Qos, p.Retain, p.Topic, p.PacketID, p.Payload)

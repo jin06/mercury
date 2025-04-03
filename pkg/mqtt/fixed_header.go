@@ -10,6 +10,17 @@ type FixedHeader struct {
 	RemainingLength VariableByteInteger
 }
 
+func (f *FixedHeader) Clone() *FixedHeader {
+	if f == nil {
+		return nil
+	}
+	return &FixedHeader{
+		PacketType:      f.PacketType,
+		Flags:           f.Flags,
+		RemainingLength: f.RemainingLength,
+	}
+}
+
 func (f *FixedHeader) Length() int {
 	return f.RemainingLength.Int()
 }
@@ -89,4 +100,14 @@ func newBasePacket(t PacketType, v ProtocolVersion) *BasePacket {
 type BasePacket struct {
 	*FixedHeader
 	Version ProtocolVersion
+}
+
+func (b *BasePacket) Clone() *BasePacket {
+	if b == nil {
+		return nil
+	}
+	return &BasePacket{
+		FixedHeader: b.FixedHeader.Clone(), // 深拷贝 FixedHeader
+		Version:     b.Version,
+	}
 }

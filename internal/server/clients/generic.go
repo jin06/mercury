@@ -227,8 +227,8 @@ func (c *generic) handleLoop(ctx context.Context) error {
 				if resp, err = c.handler.HandlePacket(val, c.id); err != nil {
 					break
 				}
-				err = c.db.delivery(val.PacketID, func(p *mqtt.Publish) error {
-					return c.handler.DeliveryPublish(c.id, p)
+				err = c.db.dispatch(val.PacketID, func(p *mqtt.Publish) error {
+					return c.handler.Dispatch(c.id, p)
 				})
 			case *mqtt.Pubcomp:
 				resp, err = c.handler.HandlePacket(val, c.id)

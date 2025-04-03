@@ -5,6 +5,17 @@ type BinaryData struct {
 	Data   []byte
 }
 
+func (b *BinaryData) Clone() *BinaryData {
+	if b == nil {
+		return nil
+	}
+	clone := &BinaryData{
+		Length: b.Length,
+		Data:   append([]byte{}, b.Data...), // 深拷贝 Data
+	}
+	return clone
+}
+
 func (b *BinaryData) Encode() []byte {
 	data, _ := encodeBinaryData(b.Data)
 	return data

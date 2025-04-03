@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
@@ -20,22 +19,28 @@ func NewManager() *Manager {
 	return m
 }
 
-func (m *Manager) Pop(p *model.Message) (mqtt.PacketID, error) {
-	s := m.Get(p.Dest)
-	if s == nil {
-		if err := m.Set(p.Dest); err != nil {
-			return 0, err
+func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*Record, error) {
+	if s := m.Get(dest); s == nil {
+		if err := m.Set(dest); err != nil {
+			return nil, err
 		}
 	}
-	return m.Get(p.Dest).Pop(p)
+	return m.Get(dest).Save(p, source, dest)
 }
 
-func (m *Manager) Rec(cid string, pid mqtt.PacketID) (bool, error) {
-	return m.Get(cid).Rec(pid)
+func (m *Manager) Delete(cid string, packetID mqtt.PacketID) error {
+	if s := m.Get(cid); s != nil {
+		_, err := s.Delete(packetID)
+		return err
+	}
+	return nil
 }
 
-func (m *Manager) Ack(cid string, pid mqtt.PacketID) (bool, error) {
-	return m.Get(cid).Ack(pid)
+func (m *Manager) Change(cid string, packetID mqtt.PacketID, state State) error {
+	if s := m.Get(cid); s != nil {
+		return s.Change(packetID, state)
+	}
+	return nil
 }
 
 func (m *Manager) Get(cid string) Store {

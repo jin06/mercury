@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/message"
 	"github.com/jin06/mercury/internal/server/subscriptions"
@@ -83,33 +82,38 @@ func (g *generic) HandleConnack(p *mqtt.Connack) error {
 }
 
 func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, err error) {
-	if p.Qos == mqtt.QoS0 || p.Qos == mqtt.QoS1 {
-		if err = g.DeliveryPublish(cid, p); err != nil {
+	if resp, err = p.Response(); err != nil {
+		return
+	}
+	if p.Qos != mqtt.QoS2 {
+		if err = g.Dispatch(cid, p); err != nil {
 			return
 		}
 	}
-	resp, err = p.Response()
 	return
 }
 
 func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, err error) {
-	_, err = g.msgManager.Ack(cid, p.ID())
+	err = g.msgManager.Delete(cid, p.PacketID)
 	return
 }
 
 func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
-	_, err = g.msgManager.Rec(cid, p.PacketID)
 	resp = p.Response()
 	return
 }
 
 func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
 	resp = p.Response()
+	err = g.msgManager.Change(cid, p.PacketID, message.ReleasedState)
+	if err != nil {
+		return
+	}
 	return
 }
 
 func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, err error) {
-	_, err = g.msgManager.Ack(cid, p.ID())
+	err = g.msgManager.Delete(cid, p.PacketID)
 	return
 }
 
@@ -157,22 +161,21 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 	panic("implement me")
 }
 
-func (g *generic) DeliveryPublish(cid string, p *mqtt.Publish) error {
+func (g *generic) Dispatch(cid string, p *mqtt.Publish) error {
 	subers := g.subManager.GetSubers(p.Topic.String())
 	for _, s := range subers {
-		msg := model.NewMessage(p, cid, s.ClientID)
-		msg.Publish.PacketID = g.manager.GetPacketID()
-		if _, err := g.msgManager.Pop(msg); err != nil {
+		record, err := g.msgManager.Save(p, cid, s.ClientID)
+		if err != nil {
 			return err
 		}
-		go g.DeliveryOne(s.ClientID, msg)
+		go g.Delivery(s.ClientID, record.Content)
 	}
 	return nil
 }
 
-func (g *generic) DeliveryOne(cid string, msg *model.Message) error {
+func (g *generic) Delivery(cid string, publish *mqtt.Publish) error {
 	if client := g.manager.Get(cid); client != nil {
-		return client.Write(msg.Publish)
+		return client.Write(publish)
 	}
 	return nil
 }
