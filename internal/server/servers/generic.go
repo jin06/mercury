@@ -3,6 +3,7 @@ package servers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/message"
@@ -11,10 +12,13 @@ import (
 )
 
 func newGeneric() *generic {
+	ch := make(chan *message.Record, 2000)
 	server := &generic{
 		manager:    server.NewManager(),
 		subManager: subscriptions.NewTrie(),
-		msgManager: *message.NewManager(),
+		msgManager: *message.NewManager(ch),
+		ch:         ch,
+		closing:    make(chan struct{}),
 	}
 	return server
 }
@@ -23,10 +27,19 @@ type generic struct {
 	manager    *server.Manager
 	subManager subscriptions.SubManager
 	msgManager message.Manager
+	ch         chan *message.Record
+	closing    chan struct{}
 }
 
 func (g *generic) Run(ctx context.Context) error {
-	select {}
+	defer close(g.closing)
+	go g.msgLoop()
+	select {
+	case <-ctx.Done():
+		return nil
+	case <-g.closing:
+		return nil
+	}
 }
 
 func (g *generic) Register(c server.Client) error {
@@ -98,9 +111,10 @@ func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, er
 	return
 }
 
-func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (resp mqtt.Packet, err error) {
-	resp = p.Response()
-	return
+func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (mqtt.Packet, error) {
+	resp := p.Response()
+	err := g.msgManager.Receive(cid, resp)
+	return resp, err
 }
 
 func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
@@ -168,14 +182,34 @@ func (g *generic) Dispatch(cid string, p *mqtt.Publish) error {
 		if err != nil {
 			return err
 		}
-		go g.Delivery(s.ClientID, record.Content)
+		go g.write(cid, record.Content)
 	}
 	return nil
 }
 
 func (g *generic) Delivery(cid string, publish *mqtt.Publish) error {
+	return g.write(cid, publish)
+}
+
+func (g *generic) write(cid string, p mqtt.Packet) error {
 	if client := g.manager.Get(cid); client != nil {
-		return client.Write(publish)
+		return client.Write(p)
 	}
 	return nil
+}
+
+func (g *generic) msgLoop() error {
+	for {
+		select {
+		case r, ok := <-g.ch:
+			if !ok {
+				return nil
+			}
+			go g.write(r.Dest, r.Content)
+
+		case <-g.closing:
+			fmt.Println("msgLoop received closing signal, exiting...")
+			return nil
+		}
+	}
 }

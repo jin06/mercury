@@ -8,13 +8,15 @@ import (
 )
 
 type Manager struct {
-	clients map[string]Store
-	mu      sync.RWMutex
+	clients  map[string]Store
+	mu       sync.RWMutex
+	delivery chan *Record
 }
 
-func NewManager() *Manager {
+func NewManager(delivery chan *Record) *Manager {
 	m := &Manager{
-		clients: map[string]Store{},
+		clients:  map[string]Store{},
+		delivery: delivery,
 	}
 	return m
 }
@@ -26,6 +28,14 @@ func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*Record, er
 		}
 	}
 	return m.Get(dest).Save(p, source, dest)
+}
+
+func (m *Manager) Receive(cid string, p *mqtt.Pubrel) error {
+	if s := m.Get(cid); s != nil {
+		err := s.Receive(p)
+		return err
+	}
+	return nil
 }
 
 func (m *Manager) Delete(cid string, packetID mqtt.PacketID) error {
@@ -55,7 +65,7 @@ func (m *Manager) Set(cid string) error {
 	if _, ok := m.clients[cid]; ok {
 		return errors.New("exist cid")
 	}
-	m.clients[cid] = NewRingBufferStore()
+	m.clients[cid] = NewRingBufferStore(m.delivery)
 	return nil
 }
 

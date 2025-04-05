@@ -17,13 +17,15 @@ const (
 )
 
 type Record struct {
-	Content *mqtt.Publish
+	Qos     mqtt.QoS
+	Content mqtt.Packet
 	Receive time.Time
 	Send    time.Time
 	State   State
 	Source  string
 	Dest    string
 	Times   int
+	Expiry  time.Duration
 }
 
 func NewRecord(p *mqtt.Publish, source string, dest string) *Record {
