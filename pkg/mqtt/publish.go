@@ -33,14 +33,8 @@ func (p *Publish) Clone() *Publish {
 		Retain:     p.Retain,
 		Topic:      p.Topic,
 		Payload:    append([]byte{}, p.Payload...), // Deep copy of Payload
-		Properties: nil,
+		Properties: p.Properties.Clone(),
 	}
-
-	// Deep copy Properties if they exist
-	if p.Properties != nil {
-		clone.Properties = p.Properties.Clone()
-	}
-
 	return clone
 }
 

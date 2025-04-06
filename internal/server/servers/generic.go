@@ -179,11 +179,15 @@ func (g *generic) HandleAuth(p *mqtt.Auth) error {
 func (g *generic) Dispatch(cid string, p *mqtt.Publish) error {
 	subers := g.subManager.GetSubers(p.Topic.String())
 	for _, s := range subers {
-		record, err := g.msgManager.Save(p, cid, s.ClientID)
-		if err != nil {
-			return err
+		if p.Qos.Zero() {
+			go g.write(s.ClientID, p)
+		} else {
+			record, err := g.msgManager.Save(p, cid, s.ClientID)
+			if err != nil {
+				return err
+			}
+			go g.write(record.Dest, record.Content)
 		}
-		go g.write(cid, record.Content)
 	}
 	return nil
 }

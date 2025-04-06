@@ -9,11 +9,11 @@ import (
 type State byte
 
 const (
-	ReadyState     State = 0
-	PublishedState State = 1
-	ReceivedState  State = 2
-	ReleasedState  State = 3
-	AckState       State = 4
+	ReadyState State = 0
+	// PublishedState State = 1
+	ReceivedState State = 2
+	ReleasedState State = 3
+	// AckState State = 4
 )
 
 type Record struct {

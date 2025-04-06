@@ -55,3 +55,7 @@ type DBConfig struct {
 	Port     string `yaml:"port"`
 	Database string `yaml:"database"`
 }
+
+type BadgerConfig struct {
+	Dir string `yaml:"dir"`
+}
