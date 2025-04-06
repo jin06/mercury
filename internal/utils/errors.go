@@ -14,6 +14,7 @@ var (
 	ErrPacketIDUsed     = errors.New("packet ID is already used")
 	ErrPacketIDNotExist = errors.New("packet ID is not exist")
 	ErrTopicNotValid    = errors.New("topic not valid")
+	ErrNotValidMode     = errors.New("mode not valid")
 )
 
 func PacketError(p mqtt.Packet, err error) {

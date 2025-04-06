@@ -2,20 +2,22 @@ package config
 
 import (
 	"os"
+	"slices"
 	"time"
 
+	"github.com/jin06/mercury/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 
 var Def *Config
 
-func Init(path string) error {
-	cfg, err := Parse(path)
-	if err != nil {
-		return err
-	}
-	Def = cfg
-	return nil
+const (
+	MemoryMode Mode = "memory"
+)
+
+func Init(path string) (err error) {
+	Def, err = Parse(path)
+	return
 }
 
 func Parse(path string) (*Config, error) {
@@ -29,9 +31,27 @@ func Parse(path string) (*Config, error) {
 }
 
 type Config struct {
-	Listeners  []Listener `yaml:"listeners"`
-	MQTTConfig MQTTConfig `yaml:"mqtt"`
-	DBConfig   DBConfig   `yaml:"db"`
+	Listeners    []Listener   `yaml:"listeners"`
+	MQTTConfig   MQTTConfig   `yaml:"mqtt"`
+	DBConfig     DBConfig     `yaml:"db"`
+	Mode         Mode         `yaml:"mode"`
+	MemoryConfig MemoryConfig `yaml:"memory_mode"`
+}
+
+func (cfg *Config) Valid() (err error) {
+	if err = cfg.Mode.Valid(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Mode string
+
+func (m Mode) Valid() error {
+	if slices.Contains([]Mode{MemoryMode}, m) {
+		return nil
+	}
+	return utils.ErrNotValidMode
 }
 
 type Listener struct {
@@ -58,4 +78,10 @@ type DBConfig struct {
 
 type BadgerConfig struct {
 	Dir string `yaml:"dir"`
+}
+
+type MemoryConfig struct {
+	Auth     bool   `yaml:"auth"`
+	UserName string `yaml:"username"`
+	Password string `yaml:"password"`
 }

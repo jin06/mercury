@@ -44,7 +44,7 @@ func (s *ringBufferStore) Receive(p *mqtt.Pubrel) error {
 
 func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if p.Qos.Zero() {
-		return nil, nil
+		return model.NewRecord(p.Clone(), source, dest), nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -56,7 +56,7 @@ func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*mo
 		np := p.Clone()
 		np.PacketID = id
 		r := model.NewRecord(np, source, dest)
-		s.used[id] = model.NewRecord(np, source, dest)
+		s.used[id] = r
 		return r, nil
 	}
 	return nil, utils.ErrPacketIDUsed
@@ -66,9 +66,8 @@ func (s *ringBufferStore) Delete(pid mqtt.PacketID) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var has bool
-	if s.used[pid] != nil {
-		s.used[pid] = nil
-		has = true
+	if _, has = s.used[pid]; has {
+		delete(s.used, pid)
 	}
 	return has, nil
 }

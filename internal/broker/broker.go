@@ -15,7 +15,7 @@ import (
 
 func NewBroker() *Broker {
 	b := &Broker{
-		Server:  servers.NewServer(),
+		Server:  servers.NewServer(config.Def.Mode),
 		closing: make(chan struct{}),
 		closed:  make(chan struct{}),
 		options: &Options{},
