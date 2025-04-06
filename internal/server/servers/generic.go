@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/message"
 	"github.com/jin06/mercury/internal/server/subscriptions"
@@ -12,7 +13,7 @@ import (
 )
 
 func newGeneric() *generic {
-	ch := make(chan *message.Record, 2000)
+	ch := make(chan *model.Record, 2000)
 	server := &generic{
 		manager:    server.NewManager(),
 		subManager: subscriptions.NewTrie(),
@@ -27,7 +28,7 @@ type generic struct {
 	manager    *server.Manager
 	subManager subscriptions.SubManager
 	msgManager message.Manager
-	ch         chan *message.Record
+	ch         chan *model.Record
 	closing    chan struct{}
 }
 
@@ -119,7 +120,7 @@ func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (mqtt.Packet, error) 
 
 func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
 	resp = p.Response()
-	err = g.msgManager.Change(cid, p.PacketID, message.ReleasedState)
+	err = g.msgManager.Change(cid, p.PacketID, model.ReleasedState)
 	if err != nil {
 		return
 	}

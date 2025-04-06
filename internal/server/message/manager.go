@@ -4,16 +4,17 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 type Manager struct {
 	clients  map[string]Store
 	mu       sync.RWMutex
-	delivery chan *Record
+	delivery chan *model.Record
 }
 
-func NewManager(delivery chan *Record) *Manager {
+func NewManager(delivery chan *model.Record) *Manager {
 	m := &Manager{
 		clients:  map[string]Store{},
 		delivery: delivery,
@@ -21,7 +22,7 @@ func NewManager(delivery chan *Record) *Manager {
 	return m
 }
 
-func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*Record, error) {
+func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if s := m.Get(dest); s == nil {
 		if err := m.Set(dest); err != nil {
 			return nil, err
@@ -46,7 +47,7 @@ func (m *Manager) Delete(cid string, packetID mqtt.PacketID) error {
 	return nil
 }
 
-func (m *Manager) Change(cid string, packetID mqtt.PacketID, state State) error {
+func (m *Manager) Change(cid string, packetID mqtt.PacketID, state model.State) error {
 	if s := m.Get(cid); s != nil {
 		return s.Change(packetID, state)
 	}

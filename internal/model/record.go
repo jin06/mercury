@@ -1,4 +1,4 @@
-package message
+package model
 
 import (
 	"time"
@@ -28,7 +28,7 @@ type Record struct {
 	Expiry  time.Duration
 }
 
-func NewRecord(p *mqtt.Publish, source string, dest string) *Record {
+func NewRecord(p mqtt.Packet, source string, dest string) *Record {
 	r := &Record{
 		Content: p,
 		Receive: time.Now(),

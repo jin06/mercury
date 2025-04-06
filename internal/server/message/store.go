@@ -4,20 +4,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 type Store interface {
-	Save(p *mqtt.Publish, source string, dest string) (*Record, error)
+	Save(p *mqtt.Publish, source string, dest string) (*model.Record, error)
 	Delete(pid mqtt.PacketID) (bool, error)
-	Change(id mqtt.PacketID, state State) error
+	Change(id mqtt.PacketID, state model.State) error
 	Receive(p *mqtt.Pubrel) error
 }
 
-func NewRingBufferStore(delivery chan *Record) *ringBufferStore {
+func NewRingBufferStore(delivery chan *model.Record) *ringBufferStore {
 	s := &ringBufferStore{
-		used:           make([]*Record, mqtt.MAXPACKETID),
+		used:           make([]*model.Record, mqtt.MAXPACKETID),
 		nextFreeID:     1,
 		max:            mqtt.MAXPACKETID,
 		expiry:         time.Hour * 24,
@@ -29,12 +30,12 @@ func NewRingBufferStore(delivery chan *Record) *ringBufferStore {
 }
 
 type ringBufferStore struct {
-	used           []*Record
+	used           []*model.Record
 	nextFreeID     mqtt.PacketID
 	max            mqtt.PacketID
 	mu             sync.Mutex
 	expiry         time.Duration
-	delivery       chan *Record
+	delivery       chan *model.Record
 	closing        chan struct{}
 	resendDuration time.Duration
 }
@@ -48,7 +49,7 @@ func (s *ringBufferStore) Receive(p *mqtt.Pubrel) error {
 	return nil
 }
 
-func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*Record, error) {
+func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if p.Qos.Zero() {
 		return nil, nil
 	}
@@ -61,8 +62,8 @@ func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*Re
 		}
 		np := p.Clone()
 		np.PacketID = id
-		r := NewRecord(np, source, dest)
-		s.used[id] = NewRecord(np, source, dest)
+		r := model.NewRecord(np, source, dest)
+		s.used[id] = model.NewRecord(np, source, dest)
 		return r, nil
 	}
 	return nil, utils.ErrPacketIDUsed
@@ -79,7 +80,7 @@ func (s *ringBufferStore) Delete(pid mqtt.PacketID) (bool, error) {
 	return has, nil
 }
 
-func (s *ringBufferStore) Change(id mqtt.PacketID, state State) error {
+func (s *ringBufferStore) Change(id mqtt.PacketID, state model.State) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[id] == nil {
@@ -116,7 +117,7 @@ func (s *ringBufferStore) resend() {
 			}
 		}
 		if record.Qos == mqtt.QoS2 {
-			if record.State == ReadyState {
+			if record.State == model.ReadyState {
 				publish, ok := record.Content.(*mqtt.Publish)
 				if ok {
 					publish.Dup = true
@@ -124,7 +125,7 @@ func (s *ringBufferStore) resend() {
 					s.delivery <- record
 				}
 			}
-			if record.State == ReceivedState {
+			if record.State == model.ReceivedState {
 				s.delivery <- record
 			}
 		}

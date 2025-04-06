@@ -2,9 +2,9 @@ package dao
 
 type Account interface{}
 
-type dbAccount struct {
+type memAccount struct {
 }
 
-func (d *dbAccount) GetAccount(name string) (*Account, error) {
+func (d *memAccount) GetAccount(name string) (*Account, error) {
 	return nil, nil
 }
