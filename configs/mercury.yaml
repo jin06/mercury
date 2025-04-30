@@ -13,3 +13,6 @@ mqtt:
   message_delivery_timeout: 10s
 
 memory_mode:
+
+badger_mode:
+  dir: badger

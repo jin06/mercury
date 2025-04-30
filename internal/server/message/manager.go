@@ -28,6 +28,7 @@ func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*model.Reco
 			return nil, err
 		}
 	}
+
 	return m.Get(dest).Save(p, source, dest)
 }
 

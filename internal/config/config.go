@@ -36,6 +36,7 @@ type Config struct {
 	DBConfig     DBConfig     `yaml:"db"`
 	Mode         Mode         `yaml:"mode"`
 	MemoryConfig MemoryConfig `yaml:"memory_mode"`
+	BadgerConfig BadgerConfig `yaml:"badger_mode"`
 }
 
 func (cfg *Config) Valid() (err error) {
