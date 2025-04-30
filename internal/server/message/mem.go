@@ -9,8 +9,8 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewRingBufferStore(delivery chan *model.Record) *ringBufferStore {
-	s := &ringBufferStore{
+func NewMemStore(delivery chan *model.Record) *memStore {
+	s := &memStore{
 		used:           make(map[mqtt.PacketID]*model.Record, mqtt.MAXPACKETID),
 		nextFreeID:     1,
 		max:            mqtt.MAXPACKETID,
@@ -22,7 +22,7 @@ func NewRingBufferStore(delivery chan *model.Record) *ringBufferStore {
 	return s
 }
 
-type ringBufferStore struct {
+type memStore struct {
 	used           map[mqtt.PacketID]*model.Record
 	nextFreeID     mqtt.PacketID
 	max            mqtt.PacketID
@@ -33,7 +33,7 @@ type ringBufferStore struct {
 	resendDuration time.Duration
 }
 
-func (s *ringBufferStore) Receive(p *mqtt.Pubrel) error {
+func (s *memStore) Receive(p *mqtt.Pubrel) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[p.PacketID] != nil {
@@ -42,7 +42,7 @@ func (s *ringBufferStore) Receive(p *mqtt.Pubrel) error {
 	return nil
 }
 
-func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
+func (s *memStore) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if p.Qos.Zero() {
 		return model.NewRecord(p.Clone(), source, dest), nil
 	}
@@ -62,7 +62,7 @@ func (s *ringBufferStore) Save(p *mqtt.Publish, source string, dest string) (*mo
 	return nil, utils.ErrPacketIDUsed
 }
 
-func (s *ringBufferStore) Delete(pid mqtt.PacketID) (bool, error) {
+func (s *memStore) Delete(pid mqtt.PacketID) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var has bool
@@ -72,7 +72,7 @@ func (s *ringBufferStore) Delete(pid mqtt.PacketID) (bool, error) {
 	return has, nil
 }
 
-func (s *ringBufferStore) Change(id mqtt.PacketID, state model.State) error {
+func (s *memStore) Change(id mqtt.PacketID, state model.State) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.used[id] == nil {
@@ -82,7 +82,7 @@ func (s *ringBufferStore) Change(id mqtt.PacketID, state model.State) error {
 	return nil
 }
 
-func (s *ringBufferStore) run() error {
+func (s *memStore) run() error {
 	ticker := time.NewTicker(s.resendDuration)
 	defer ticker.Stop()
 	for {
@@ -95,7 +95,7 @@ func (s *ringBufferStore) run() error {
 	}
 }
 
-func (s *ringBufferStore) resend() {
+func (s *memStore) resend() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, record := range s.used {
@@ -124,12 +124,12 @@ func (s *ringBufferStore) resend() {
 	}
 }
 
-func (s *ringBufferStore) Close() error {
+func (s *memStore) Close() error {
 	close(s.closing)
 	return nil
 }
 
-func (s *ringBufferStore) IsStop() bool {
+func (s *memStore) IsStop() bool {
 	_, ok := <-s.closing
 	return ok
 }

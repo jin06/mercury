@@ -66,7 +66,7 @@ func (m *Manager) Set(cid string) error {
 	if _, ok := m.clients[cid]; ok {
 		return errors.New("exist cid")
 	}
-	m.clients[cid] = NewRingBufferStore(m.delivery)
+	m.clients[cid] = NewMemStore(m.delivery)
 	return nil
 }
 
