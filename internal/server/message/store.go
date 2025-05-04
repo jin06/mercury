@@ -6,12 +6,12 @@ import (
 )
 
 type Store interface {
-	Publish(p *mqtt.Publish, source string, dest string) (*model.Record, error)
+	Publish(p *mqtt.Publish) (*model.Record, error)
 
 	Ack(mqtt.PacketID) error
 
 	Receive(*mqtt.Pubrel) error
-	Complete(pid mqtt.PacketID) error
+	Complete(mqtt.PacketID) error
 
 	Release(*mqtt.Pubcomp) error
 }

@@ -23,10 +23,11 @@ func Init(options config.BadgerConfig) (err error) {
 	return
 }
 
-func NewBadgerStore(options config.BadgerConfig) (*badgerStore, error) {
+func NewBadgerStore(cid string, options config.BadgerConfig) (*badgerStore, error) {
 	s := &badgerStore{
 		options: options,
 		db:      def,
+		cid:     cid,
 	}
 	return s, nil
 }
@@ -34,24 +35,42 @@ func NewBadgerStore(options config.BadgerConfig) (*badgerStore, error) {
 type badgerStore struct {
 	options config.BadgerConfig
 	db      *badger.DB
+	cid     string
 }
 
-func (store *badgerStore) Save(p *mqtt.Publish, source string, dest string) (record *model.Record, err error) {
+func (store *badgerStore) Publish(p *mqtt.Publish) (*model.Record, error) {
+	return store.create(p)
+}
+
+func (store *badgerStore) Ack(pid mqtt.PacketID) error {
+	return store.delete(pid)
+}
+
+func (store *badgerStore) Receive(p *mqtt.Pubrel) error {
+	return store.update(p)
+}
+
+func (store *badgerStore) Release(p *mqtt.Pubcomp) error {
+	return store.update(p)
+}
+
+func (store *badgerStore) Complete(pid mqtt.PacketID) error {
+	return store.delete(pid)
+}
+
+func (store *badgerStore) create(p *mqtt.Publish) (record *model.Record, err error) {
 	if p.Qos.Zero() {
-		return model.NewRecord(p.Clone(), source, dest), nil
+		return model.NewRecord(p.Clone()), nil
 	}
-	// store.db.NewStream().Send
 	err = store.db.Update(func(txn *badger.Txn) (err error) {
-		item, err := txn.Get([]byte(getPacketIDKey(dest)))
+		item, err := txn.Get([]byte(store.getPacketIDKey()))
 		if err != nil {
 			return
 		}
-
 		val, err := item.ValueCopy(nil)
 		if err != nil {
 			return
 		}
-
 		currentID := mqtt.PacketID(binary.BigEndian.Uint16(val))
 
 		if currentID == 0 {
@@ -69,14 +88,14 @@ func (store *badgerStore) Save(p *mqtt.Publish, source string, dest string) (rec
 		encoder := gob.NewEncoder(&buf)
 		np := p.Clone()
 		np.PacketID = currentID
-		r := model.NewRecord(np, source, dest)
+		r := model.NewRecord(np)
 		if err = encoder.Encode(r); err != nil {
 			return
 		}
-		if err = txn.Set([]byte(getRecordKey(dest, currentID)), buf.Bytes()); err != nil {
+		if err = txn.Set([]byte(store.getRecordKey(currentID)), buf.Bytes()); err != nil {
 			return
 		}
-		if err = txn.Set([]byte(getPacketIDKey(dest)), nextID.Encode()); err != nil {
+		if err = txn.Set([]byte(store.getPacketIDKey()), nextID.Encode()); err != nil {
 			return
 		}
 		return
@@ -84,19 +103,18 @@ func (store *badgerStore) Save(p *mqtt.Publish, source string, dest string) (rec
 	return
 }
 
-func (store *badgerStore) Delete(pid mqtt.PacketID) (ok bool, err error) {
-	return
-}
-func (store *badgerStore) Change(id mqtt.PacketID, state model.State) (err error) {
-	return
-}
-func (store *badgerStore) Receive(p *mqtt.Pubrel) (err error) {
-	return
-}
-func getPacketIDKey(clientID string) string {
-	return fmt.Sprintf(packetIDKey, clientID)
+func (store *badgerStore) update(p mqtt.Message) error {
+	return nil
 }
 
-func getRecordKey(clientID string, packetID mqtt.PacketID) string {
-	return fmt.Sprintf(recordKey, clientID, packetID)
+func (store *badgerStore) delete(pid mqtt.PacketID) error {
+	return store.db.DropPrefix([]byte(store.getRecordKey(pid)))
+}
+
+func (store *badgerStore) getPacketIDKey() string {
+	return fmt.Sprintf(packetIDKey, store.cid)
+}
+
+func (store *badgerStore) getRecordKey(packetID mqtt.PacketID) string {
+	return fmt.Sprintf(recordKey, store.cid, packetID)
 }

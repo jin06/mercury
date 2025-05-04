@@ -3,7 +3,6 @@ package servers
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/server"
@@ -34,7 +33,6 @@ type generic struct {
 
 func (g *generic) Run(ctx context.Context) error {
 	defer close(g.closing)
-	go g.msgLoop()
 	select {
 	case <-ctx.Done():
 		return nil
@@ -179,11 +177,11 @@ func (g *generic) Dispatch(cid string, p *mqtt.Publish) error {
 		if p.Qos.Zero() {
 			go g.write(s.ClientID, p)
 		} else {
-			record, err := g.msgManager.Publish(p, cid, s.ClientID)
+			record, err := g.msgManager.Publish(p, s.ClientID)
 			if err != nil {
 				return err
 			}
-			go g.write(record.Dest, record.Content)
+			go g.write(s.ClientID, record.Content)
 		}
 	}
 	return nil
@@ -198,20 +196,4 @@ func (g *generic) write(cid string, p mqtt.Packet) error {
 		return client.Write(p)
 	}
 	return nil
-}
-
-func (g *generic) msgLoop() error {
-	for {
-		select {
-		case r, ok := <-g.ch:
-			if !ok {
-				return nil
-			}
-			go g.write(r.Dest, r.Content)
-
-		case <-g.closing:
-			fmt.Println("msgLoop received closing signal, exiting...")
-			return nil
-		}
-	}
 }

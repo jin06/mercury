@@ -22,13 +22,13 @@ func NewManager(delivery chan *model.Record) *Manager {
 	return m
 }
 
-func (m *Manager) Publish(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
-	if s := m.Get(dest); s == nil {
-		if err := m.Set(dest); err != nil {
+func (m *Manager) Publish(p *mqtt.Publish, cid string) (*model.Record, error) {
+	if s := m.Get(cid); s == nil {
+		if err := m.Set(cid); err != nil {
 			return nil, err
 		}
 	}
-	return m.Get(dest).Publish(p, source, dest)
+	return m.Get(cid).Publish(p)
 }
 
 func (m *Manager) Receive(cid string, p *mqtt.Pubrel) error {
@@ -72,6 +72,6 @@ func (m *Manager) Set(cid string) error {
 	if _, ok := m.clients[cid]; ok {
 		return errors.New("exist cid")
 	}
-	m.clients[cid] = NewMemStore(m.delivery)
+	m.clients[cid] = NewMemStore(cid, m.delivery)
 	return nil
 }

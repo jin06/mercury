@@ -16,6 +16,10 @@ type Puback struct {
 	Properties *Properties
 }
 
+func (p *Puback) PID() PacketID {
+	return p.PacketID
+}
+
 func (p *Puback) String() string {
 	return fmt.Sprintf("Puback - PacketID: %d, ReasonCode: %d, Properties: %v", p.PacketID, p.ReasonCode, p.Properties)
 }

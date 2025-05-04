@@ -24,6 +24,10 @@ type Publish struct {
 	Properties *Properties
 }
 
+func (p *Publish) PID() PacketID {
+	return p.PacketID
+}
+
 func (p *Publish) Clone() *Publish {
 	clone := &Publish{
 		BasePacket: p.BasePacket.Clone(),

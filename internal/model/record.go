@@ -22,20 +22,16 @@ type Record struct {
 	Receive time.Time
 	Send    time.Time
 	State   State
-	Source  string
-	Dest    string
 	Times   int
 	Expiry  time.Duration
 }
 
-func NewRecord(p mqtt.Packet, source string, dest string) *Record {
+func NewRecord(p mqtt.Packet) *Record {
 	r := &Record{
 		Content: p,
 		Receive: time.Now(),
 		Send:    time.Now(),
 		State:   ReadyState,
-		Source:  source,
-		Dest:    dest,
 		Times:   0,
 	}
 	return r

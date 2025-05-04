@@ -9,8 +9,9 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewMemStore(delivery chan *model.Record) *memStore {
+func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 	s := &memStore{
+		cid:            cid,
 		used:           make(map[mqtt.PacketID]*model.Record, mqtt.MAXPACKETID),
 		nextFreeID:     1,
 		max:            mqtt.MAXPACKETID,
@@ -23,6 +24,7 @@ func NewMemStore(delivery chan *model.Record) *memStore {
 }
 
 type memStore struct {
+	cid            string
 	used           map[mqtt.PacketID]*model.Record
 	nextFreeID     mqtt.PacketID
 	max            mqtt.PacketID
@@ -61,13 +63,13 @@ func (s *memStore) Complete(pid mqtt.PacketID) (err error) {
 	return
 }
 
-func (s *memStore) Publish(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
-	return s.save(p, source, dest)
+func (s *memStore) Publish(p *mqtt.Publish) (*model.Record, error) {
+	return s.save(p)
 }
 
-func (s *memStore) save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
+func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 	if p.Qos.Zero() {
-		return model.NewRecord(p.Clone(), source, dest), nil
+		return model.NewRecord(p.Clone()), nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -78,7 +80,7 @@ func (s *memStore) save(p *mqtt.Publish, source string, dest string) (*model.Rec
 		}
 		np := p.Clone()
 		np.PacketID = id
-		r := model.NewRecord(np, source, dest)
+		r := model.NewRecord(np)
 		s.used[id] = r
 		return r, nil
 	}

@@ -16,6 +16,10 @@ type Pubrel struct {
 	Properties *Properties
 }
 
+func (p *Pubrel) PID() PacketID {
+	return p.PacketID
+}
+
 func (p *Pubrel) String() string {
 	return fmt.Sprintf("Pubrel - PacketID: %v, ReasonCode: %v", p.PacketID, p.ReasonCode)
 }
