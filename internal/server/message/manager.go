@@ -22,14 +22,13 @@ func NewManager(delivery chan *model.Record) *Manager {
 	return m
 }
 
-func (m *Manager) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
+func (m *Manager) Publish(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if s := m.Get(dest); s == nil {
 		if err := m.Set(dest); err != nil {
 			return nil, err
 		}
 	}
-
-	return m.Get(dest).Save(p, source, dest)
+	return m.Get(dest).Publish(p, source, dest)
 }
 
 func (m *Manager) Receive(cid string, p *mqtt.Pubrel) error {
@@ -40,17 +39,23 @@ func (m *Manager) Receive(cid string, p *mqtt.Pubrel) error {
 	return nil
 }
 
-func (m *Manager) Delete(cid string, packetID mqtt.PacketID) error {
+func (m *Manager) Ack(cid string, packetID mqtt.PacketID) error {
 	if s := m.Get(cid); s != nil {
-		_, err := s.Delete(packetID)
-		return err
+		return s.Ack(packetID)
 	}
 	return nil
 }
 
-func (m *Manager) Change(cid string, packetID mqtt.PacketID, state model.State) error {
+func (m *Manager) Release(cid string, p *mqtt.Pubcomp) error {
 	if s := m.Get(cid); s != nil {
-		return s.Change(packetID, state)
+		return s.Release(p)
+	}
+	return nil
+}
+
+func (m *Manager) Complete(cid string, pid mqtt.PacketID) error {
+	if s := m.Get(cid); s != nil {
+		return s.Complete(pid)
 	}
 	return nil
 }
@@ -69,10 +74,4 @@ func (m *Manager) Set(cid string) error {
 	}
 	m.clients[cid] = NewMemStore(m.delivery)
 	return nil
-}
-
-func (m *Manager) Remove(cid string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	delete(m.clients, cid)
 }

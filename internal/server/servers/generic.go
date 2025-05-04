@@ -107,9 +107,8 @@ func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, 
 	return
 }
 
-func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (resp mqtt.Packet, err error) {
-	err = g.msgManager.Delete(cid, p.PacketID)
-	return
+func (g *generic) HandlePuback(p *mqtt.Puback, cid string) (err error) {
+	return g.msgManager.Ack(cid, p.PacketID)
 }
 
 func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (mqtt.Packet, error) {
@@ -118,17 +117,15 @@ func (g *generic) HandlePubrec(p *mqtt.Pubrec, cid string) (mqtt.Packet, error) 
 	return resp, err
 }
 
-func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (resp mqtt.Packet, err error) {
-	resp = p.Response()
-	err = g.msgManager.Change(cid, p.PacketID, model.ReleasedState)
-	if err != nil {
-		return
-	}
-	return
+func (g *generic) HandlePubrel(p *mqtt.Pubrel, cid string) (mqtt.Packet, error) {
+	resp := p.Response()
+	// err = g.msgManager.Change(cid, p.PacketID, model.ReleasedState)
+	err := g.msgManager.Release(cid, resp)
+	return resp, err
 }
 
 func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, err error) {
-	err = g.msgManager.Delete(cid, p.PacketID)
+	err = g.msgManager.Complete(cid, p.PacketID)
 	return
 }
 
@@ -182,7 +179,7 @@ func (g *generic) Dispatch(cid string, p *mqtt.Publish) error {
 		if p.Qos.Zero() {
 			go g.write(s.ClientID, p)
 		} else {
-			record, err := g.msgManager.Save(p, cid, s.ClientID)
+			record, err := g.msgManager.Publish(p, cid, s.ClientID)
 			if err != nil {
 				return err
 			}

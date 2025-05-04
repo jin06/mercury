@@ -42,7 +42,30 @@ func (s *memStore) Receive(p *mqtt.Pubrel) error {
 	return nil
 }
 
-func (s *memStore) Save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
+func (s *memStore) Release(p *mqtt.Pubcomp) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.used[p.PacketID] != nil {
+		s.used[p.PacketID].Content = p
+	}
+	return nil
+}
+
+func (s *memStore) Ack(pid mqtt.PacketID) (err error) {
+	_, err = s.delete(pid)
+	return
+}
+
+func (s *memStore) Complete(pid mqtt.PacketID) (err error) {
+	_, err = s.delete(pid)
+	return
+}
+
+func (s *memStore) Publish(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
+	return s.save(p, source, dest)
+}
+
+func (s *memStore) save(p *mqtt.Publish, source string, dest string) (*model.Record, error) {
 	if p.Qos.Zero() {
 		return model.NewRecord(p.Clone(), source, dest), nil
 	}
@@ -62,7 +85,7 @@ func (s *memStore) Save(p *mqtt.Publish, source string, dest string) (*model.Rec
 	return nil, utils.ErrPacketIDUsed
 }
 
-func (s *memStore) Delete(pid mqtt.PacketID) (bool, error) {
+func (s *memStore) delete(pid mqtt.PacketID) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var has bool
@@ -70,16 +93,6 @@ func (s *memStore) Delete(pid mqtt.PacketID) (bool, error) {
 		delete(s.used, pid)
 	}
 	return has, nil
-}
-
-func (s *memStore) Change(id mqtt.PacketID, state model.State) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.used[id] == nil {
-		return utils.ErrPacketIDNotExist
-	}
-	s.used[id].State = state
-	return nil
 }
 
 func (s *memStore) run() error {

@@ -24,7 +24,7 @@ func (p *Pubrel) ID() PacketID {
 	return p.PacketID
 }
 
-func (p *Pubrel) Response() (resp Packet) {
+func (p *Pubrel) Response() (resp *Pubcomp) {
 	resp = &Pubcomp{
 		BasePacket: newBasePacket(PUBCOMP, p.Version),
 		PacketID:   p.PacketID,
