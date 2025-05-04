@@ -4,20 +4,37 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/model"
+	"github.com/jin06/mercury/internal/server/message/store"
+	badgerStore "github.com/jin06/mercury/internal/server/message/store/badger"
+	memStore "github.com/jin06/mercury/internal/server/message/store/memory"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 type Manager struct {
-	clients  map[string]Store
+	clients  map[string]store.Store
 	mu       sync.RWMutex
 	delivery chan *model.Record
+	newStore func(cid string, delivery chan *model.Record) store.Store
 }
 
 func NewManager(delivery chan *model.Record) *Manager {
 	m := &Manager{
-		clients:  map[string]Store{},
+		clients:  map[string]store.Store{},
 		delivery: delivery,
+	}
+	switch config.Def.MessageStore.Mode {
+	case "memory":
+		m.newStore = func(cid string, delivery chan *model.Record) store.Store {
+			return memStore.NewMemStore(cid, delivery)
+		}
+	case "badger":
+		m.newStore = func(cid string, delivery chan *model.Record) store.Store {
+			return badgerStore.NewBadgerStore(cid, delivery)
+		}
+	default:
+		panic("memory store: " + config.Def.MessageStore.Mode)
 	}
 	return m
 }
@@ -60,18 +77,18 @@ func (m *Manager) Complete(cid string, pid mqtt.PacketID) error {
 	return nil
 }
 
-func (m *Manager) Get(cid string) Store {
+func (m *Manager) Get(cid string) store.Store {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.clients[cid]
 }
 
-func (m *Manager) Set(cid string) error {
+func (m *Manager) Set(cid string) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if _, ok := m.clients[cid]; ok {
 		return errors.New("exist cid")
 	}
-	m.clients[cid] = NewMemStore(cid, m.delivery)
-	return nil
+	m.clients[cid] = m.newStore(cid, m.delivery)
+	return
 }

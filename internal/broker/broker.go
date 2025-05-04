@@ -10,7 +10,7 @@ import (
 	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/clients"
-	"github.com/jin06/mercury/internal/server/message/msgBadger"
+	badgerStore "github.com/jin06/mercury/internal/server/message/store/badger"
 	"github.com/jin06/mercury/internal/server/servers"
 )
 
@@ -35,11 +35,9 @@ type Broker struct {
 func (b *Broker) Run(ctx context.Context) (err error) {
 	defer close(b.closed)
 	defer b.close()
-
-	if err = msgBadger.Init(config.Def.BadgerConfig); err != nil {
-		panic(err)
+	if err = badgerStore.Init(config.Def.MessageStore.BadgerConfig); err != nil {
+		return
 	}
-
 	return b.listen(ctx)
 }
 

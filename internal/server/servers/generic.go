@@ -33,11 +33,16 @@ type generic struct {
 
 func (g *generic) Run(ctx context.Context) error {
 	defer close(g.closing)
-	select {
-	case <-ctx.Done():
-		return nil
-	case <-g.closing:
-		return nil
+	for {
+		select {
+		case r := <-g.ch:
+			if werr := g.write(r.ClientID, r.Content); werr != nil {
+			}
+		case <-ctx.Done():
+			return nil
+		case <-g.closing:
+			return nil
+		}
 	}
 }
 

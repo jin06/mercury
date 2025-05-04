@@ -17,22 +17,24 @@ const (
 )
 
 type Record struct {
-	Qos     mqtt.QoS
-	Content mqtt.Packet
-	Receive time.Time
-	Send    time.Time
-	State   State
-	Times   int
-	Expiry  time.Duration
+	Qos      mqtt.QoS
+	Receive  time.Time
+	Send     time.Time
+	Expiry   time.Duration
+	ClientID string
+	State    State
+	Times    uint64
+	Content  mqtt.Packet
 }
 
-func NewRecord(p mqtt.Packet) *Record {
+func NewRecord(cid string, p mqtt.Packet) *Record {
 	r := &Record{
-		Content: p,
-		Receive: time.Now(),
-		Send:    time.Now(),
-		State:   ReadyState,
-		Times:   0,
+		Content:  p,
+		Receive:  time.Now(),
+		Send:     time.Now(),
+		State:    ReadyState,
+		Times:    0,
+		ClientID: cid,
 	}
 	return r
 }

@@ -1,4 +1,4 @@
-package message
+package memStore
 
 import (
 	"sync"
@@ -69,7 +69,7 @@ func (s *memStore) Publish(p *mqtt.Publish) (*model.Record, error) {
 
 func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 	if p.Qos.Zero() {
-		return model.NewRecord(p.Clone()), nil
+		return model.NewRecord(s.cid, p.Clone()), nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -80,7 +80,7 @@ func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 		}
 		np := p.Clone()
 		np.PacketID = id
-		r := model.NewRecord(np)
+		r := model.NewRecord(s.cid, np)
 		s.used[id] = r
 		return r, nil
 	}

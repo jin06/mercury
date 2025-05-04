@@ -35,8 +35,7 @@ type Config struct {
 	MQTTConfig   MQTTConfig   `yaml:"mqtt"`
 	DBConfig     DBConfig     `yaml:"db"`
 	Mode         Mode         `yaml:"mode"`
-	MemoryConfig MemoryConfig `yaml:"memory_mode"`
-	BadgerConfig BadgerConfig `yaml:"badger_mode"`
+	MessageStore MessageStore `yaml:"message_store"`
 }
 
 func (cfg *Config) Valid() (err error) {
@@ -85,4 +84,10 @@ type MemoryConfig struct {
 	Auth     bool   `yaml:"auth"`
 	UserName string `yaml:"username"`
 	Password string `yaml:"password"`
+}
+
+type MessageStore struct {
+	Mode         string       `yaml:"mode"`
+	BadgerConfig BadgerConfig `yaml:"badger"`
+	MemoryConfig MemoryConfig `yaml:"moeory"`
 }
