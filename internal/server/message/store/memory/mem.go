@@ -12,9 +12,9 @@ import (
 func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 	s := &memStore{
 		cid:            cid,
-		used:           make(map[mqtt.PacketID]*model.Record, mqtt.MAXPACKETID),
+		used:           make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
 		nextFreeID:     1,
-		max:            mqtt.MAXPACKETID,
+		max:            mqtt.MAX_PACKET_ID,
 		expiry:         time.Hour * 24,
 		delivery:       delivery,
 		resendDuration: time.Second * 5,

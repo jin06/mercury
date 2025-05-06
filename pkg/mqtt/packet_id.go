@@ -1,7 +1,7 @@
 package mqtt
 
 const (
-	MIN_PACKET_ID PacketID = 0
+	MIN_PACKET_ID PacketID = 1
 	MAX_PACKET_ID PacketID = 65535
 )
 

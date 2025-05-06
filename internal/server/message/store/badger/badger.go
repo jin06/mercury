@@ -84,7 +84,7 @@ func (store *badgerStore) create(p *mqtt.Publish) (record *model.Record, err err
 			return err
 		}
 
-		if currentID == 0 || currentID > mqtt.MAXPACKETID {
+		if currentID == 0 || currentID > mqtt.MAX_PACKET_ID {
 			currentID = 1
 		}
 		nextID := currentID + 1
