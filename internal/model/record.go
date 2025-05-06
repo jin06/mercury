@@ -21,8 +21,8 @@ type Record struct {
 	Receive  time.Time
 	Send     time.Time
 	Expiry   time.Duration
+	Version  mqtt.ProtocolVersion
 	ClientID string
-	State    State
 	Times    uint64
 	Content  mqtt.Packet
 }
@@ -32,7 +32,7 @@ func NewRecord(cid string, p mqtt.Packet) *Record {
 		Content:  p,
 		Receive:  time.Now(),
 		Send:     time.Now(),
-		State:    ReadyState,
+		Version:  p.GetVersion(),
 		Times:    0,
 		ClientID: cid,
 	}

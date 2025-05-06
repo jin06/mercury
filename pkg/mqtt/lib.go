@@ -65,6 +65,9 @@ func Decode(version ProtocolVersion, data []byte) (packet Packet, err error) {
 	if packet == nil {
 		return nil, ErrMalformedPacket
 	}
-	_, err = packet.Decode(data[i:])
+	if _, err = packet.Decode(data[i:]); err != nil {
+		return
+	}
+	packet.SetVersion(version)
 	return
 }

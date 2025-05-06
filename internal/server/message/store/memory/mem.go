@@ -11,23 +11,24 @@ import (
 
 func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 	s := &memStore{
-		cid:            cid,
-		used:           make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
-		nextFreeID:     1,
-		max:            mqtt.MAX_PACKET_ID,
+		cid:        cid,
+		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
+		nextFreeID: 1,
+		// max:            mqtt.MAX_PACKET_ID,
 		expiry:         time.Hour * 24,
 		delivery:       delivery,
 		resendDuration: time.Second * 5,
+		closing:        make(chan struct{}),
 	}
 	go s.run()
 	return s
 }
 
 type memStore struct {
-	cid            string
-	used           map[mqtt.PacketID]*model.Record
-	nextFreeID     mqtt.PacketID
-	max            mqtt.PacketID
+	cid        string
+	used       map[mqtt.PacketID]*model.Record
+	nextFreeID mqtt.PacketID
+	// max            mqtt.PacketID
 	mu             sync.Mutex
 	expiry         time.Duration
 	delivery       chan *model.Record
@@ -75,7 +76,7 @@ func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 	defer s.mu.Unlock()
 	if s.used[s.nextFreeID] == nil {
 		id := s.nextFreeID
-		if s.nextFreeID++; s.nextFreeID > s.max {
+		if s.nextFreeID++; s.nextFreeID > mqtt.MAX_PACKET_ID {
 			s.nextFreeID = 1
 		}
 		np := p.Clone()
@@ -123,17 +124,12 @@ func (s *memStore) resend() {
 			}
 		}
 		if record.Qos == mqtt.QoS2 {
-			if record.State == model.ReadyState {
-				publish, ok := record.Content.(*mqtt.Publish)
-				if ok {
-					publish.Dup = true
-					record.Content = publish
-					s.delivery <- record
-				}
-			}
-			if record.State == model.ReceivedState {
+			if publish, ok := record.Content.(*mqtt.Publish); ok {
+				publish.Dup = true
+				record.Content = publish
 				s.delivery <- record
 			}
+			s.delivery <- record
 		}
 		record.Times++
 	}

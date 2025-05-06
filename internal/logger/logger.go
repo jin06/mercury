@@ -1,4 +1,4 @@
-package utils
+package logger
 
 import (
 	"github.com/rs/zerolog/log"
@@ -7,4 +7,8 @@ import (
 var Logger = log.Logger
 
 func init() {
+}
+
+func Error(err error) {
+	Logger.Err(err).Send()
 }

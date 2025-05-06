@@ -7,14 +7,16 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/jin06/mercury/internal/config"
+	"github.com/jin06/mercury/internal/logger"
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
 var (
-	def         *badger.DB
-	packetIDKey = "packetid:%s"  // -> packetid:{clientID}
-	recordKey   = "record:%s:%d" // -> record:{clientID}:{PacketID}
+	def             *badger.DB
+	packetIDKey     = "packetid:%s"  // -> packetid:{clientID}
+	recordKey       = "record:%s:%d" // -> record:{clientID}:{PacketID}
+	recordPrefixKey = "record:%s"
 )
 
 func Init(options config.BadgerConfig) (err error) {
@@ -24,19 +26,81 @@ func Init(options config.BadgerConfig) (err error) {
 
 func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
 	s := &badgerStore{
-		options:  config.Def.MessageStore.BadgerConfig,
-		db:       def,
-		cid:      cid,
-		delivery: delivery,
+		options:        config.Def.MessageStore.BadgerConfig,
+		db:             def,
+		cid:            cid,
+		delivery:       delivery,
+		resendDuration: time.Second * 5,
+		expiry:         time.Hour * 24,
+		closing:        make(chan struct{}),
 	}
+	go s.run()
 	return s
 }
 
 type badgerStore struct {
-	options  config.BadgerConfig
-	db       *badger.DB
-	cid      string
-	delivery chan *model.Record
+	options        config.BadgerConfig
+	db             *badger.DB
+	cid            string
+	expiry         time.Duration
+	resendDuration time.Duration
+	delivery       chan *model.Record
+	closing        chan struct{}
+}
+
+func (s *badgerStore) run() error {
+	ticker := time.NewTicker(s.resendDuration)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.closing:
+			return nil
+		case <-ticker.C:
+			s.resend()
+		}
+	}
+}
+
+func (store *badgerStore) resend() {
+	store.db.View(func(txn *badger.Txn) error {
+		prefix := store.getRecordPrefix()
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = true
+		opts.Prefix = prefix
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			v, err := item.ValueCopy(nil)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			record, err := decodeRecord(v)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			if record.Qos == mqtt.QoS1 {
+				if publish, ok := record.Content.(*mqtt.Publish); ok {
+					publish.Dup = true
+					record.Content = publish
+					store.delivery <- record
+				}
+				if record.Qos == mqtt.QoS2 {
+					if publish, ok := record.Content.(*mqtt.Publish); ok {
+						publish.Dup = true
+						record.Content = publish
+						store.delivery <- record
+					}
+				}
+				record.Times++
+			}
+		}
+		return nil
+	})
 }
 
 func (store *badgerStore) Publish(p *mqtt.Publish) (*model.Record, error) {
@@ -131,6 +195,10 @@ func (store *badgerStore) getRecordKey(packetID mqtt.PacketID) string {
 	return fmt.Sprintf(recordKey, store.cid, packetID)
 }
 
+func (store *badgerStore) getRecordPrefix() []byte {
+	return []byte(fmt.Sprintf(recordPrefixKey, store.cid))
+}
+
 func encodeRecord(r *model.Record) ([]byte, error) {
 	data := []byte{}
 	data = append(data, byte(r.Qos))
@@ -145,6 +213,7 @@ func encodeRecord(r *model.Record) ([]byte, error) {
 		data = append(data, raw...)
 	}
 	data = binary.BigEndian.AppendUint64(data, uint64(r.Expiry.Nanoseconds()))
+	data = append(data, byte(r.Version))
 	data = append(data, []byte(r.ClientID)...)
 	data = binary.BigEndian.AppendUint64(data, r.Times)
 	if raw, err := r.Content.Encode(); err != nil {
@@ -186,6 +255,9 @@ func decodeRecord(data []byte) (*model.Record, error) {
 	r.Expiry = time.Duration(int64(binary.BigEndian.Uint64(data[i:])))
 	i += 8
 
+	r.Version = mqtt.ProtocolVersion(data[i])
+	i++
+
 	// ClientID (must store its length before writing in encode!)
 	clientIDLen := binary.BigEndian.Uint16(data[i : i+2])
 	i += 2
@@ -201,23 +273,10 @@ func decodeRecord(data []byte) (*model.Record, error) {
 	}
 	r.Times = binary.BigEndian.Uint64(data[i:])
 	i += 8
-
-	header := &mqtt.FixedHeader{}
-	if n, err := header.Decode(data[i:]); err != nil {
+	packet, err := mqtt.Decode(r.Version, data[i:])
+	if err != nil {
 		return nil, err
-	} else {
-		i += n
 	}
-	switch header.PacketType {
-	case mqtt.PUBLISH:
-		p := &mqtt.Publish{}
-		if n, err := p.Decode(data[i:]); err != nil {
-			return nil, err
-		} else {
-			i += n
-			r.Content = p
-		}
-		// todo
-	}
+	r.Content = packet
 	return r, nil
 }
