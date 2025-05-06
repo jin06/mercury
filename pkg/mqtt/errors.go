@@ -11,6 +11,7 @@ var (
 	ErrBytesShorter       = errors.New("the length of []byte is shorter than expected")
 	ErrUTFLengthShoter    = errors.New("the length of []byte is shorter for UTF string")
 	ErrPacketEncoding     = errors.New("packet encoding error")
+	ErrPacketDecoding     = errors.New("packet decoding error")
 	ErrProtocolViolation  = errors.New("protocol violation")
 	ErrUTFLengthTooLong   = errors.New("max length that can be encoded in 2 bytes")
 	ErrReadNotEnoughBytes = errors.New("not enough bytes read from reader")
@@ -18,3 +19,9 @@ var (
 	ErrInsufficientData   = errors.New("insufficient data")
 	ErrNotUint16          = errors.New("value out of uint16 range")
 )
+
+type ProtocolError struct{}
+
+func (p *ProtocolError) Error() string {
+	return ""
+}

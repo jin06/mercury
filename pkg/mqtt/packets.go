@@ -34,4 +34,8 @@ type Packet interface {
 	Write(*Writer) error
 	// Only body
 	WriteBody(*Writer) error
+
+	// protocol version
+	SetVersion(ProtocolVersion)
+	GetVersion() ProtocolVersion
 }

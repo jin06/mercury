@@ -102,6 +102,14 @@ type BasePacket struct {
 	Version ProtocolVersion
 }
 
+func (b *BasePacket) SetVersion(v ProtocolVersion) {
+	b.Version = v
+}
+
+func (b *BasePacket) GetVersion() ProtocolVersion {
+	return b.Version
+}
+
 func (b *BasePacket) Clone() *BasePacket {
 	if b == nil {
 		return nil

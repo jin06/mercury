@@ -5,14 +5,14 @@ import "fmt"
 func NewConnect(header *FixedHeader, v ProtocolVersion) *Connect {
 	return &Connect{
 		BasePacket: &BasePacket{header, v},
-		Version:    v,
+		// Version:    v,
 		Properties: new(Properties),
 	}
 }
 
 type Connect struct {
 	*BasePacket
-	Version      ProtocolVersion
+	// Version      ProtocolVersion
 	ProtocolName string
 	//Clean Clean Session(v3,v4) or Clean Start(v5)
 	UserNameFlag bool

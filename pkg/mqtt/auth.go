@@ -1,12 +1,16 @@
 package mqtt
 
-func NewAuth(header *FixedHeader) *Auth {
-	return &Auth{FixedHeader: header}
+func NewAuth(header *FixedHeader, v ProtocolVersion) *Auth {
+	// return &Auth{FixedHeader: header}
+	return &Auth{
+		BasePacket: &BasePacket{header, v},
+		Properties: new(Properties),
+	}
 }
 
 type Auth struct {
-	*FixedHeader
-	Version    ProtocolVersion
+	*BasePacket
+	// Version    ProtocolVersion
 	ReasonCode ReasonCode
 	Properties *Properties
 }
