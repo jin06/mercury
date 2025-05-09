@@ -17,7 +17,6 @@ const (
 )
 
 type Record struct {
-	Qos      mqtt.QoS
 	Receive  time.Time
 	Send     time.Time
 	Expiry   time.Duration
@@ -27,9 +26,10 @@ type Record struct {
 	Content  mqtt.Packet
 }
 
-func NewRecord(cid string, p mqtt.Packet) *Record {
+func NewRecord(cid string, p mqtt.Message, expiry time.Duration) *Record {
 	r := &Record{
 		Content:  p,
+		Expiry:   expiry,
 		Receive:  time.Now(),
 		Send:     time.Now(),
 		Version:  p.GetVersion(),

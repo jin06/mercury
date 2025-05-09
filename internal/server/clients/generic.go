@@ -221,6 +221,8 @@ func (c *generic) handleLoop(ctx context.Context) error {
 						c.db.save(val, resp)
 					}
 				}
+			case *mqtt.Puback:
+				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrec:
 				resp, err = c.handler.HandlePacket(val, c.id)
 			case *mqtt.Pubrel:

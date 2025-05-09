@@ -31,7 +31,7 @@ func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
 		cid:            cid,
 		delivery:       delivery,
 		resendDuration: time.Second * 5,
-		expiry:         time.Hour * 24,
+		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		closing:        make(chan struct{}),
 	}
 	go s.run()
@@ -83,21 +83,12 @@ func (store *badgerStore) resend() {
 				logger.Error(err)
 				continue
 			}
-			if record.Qos == mqtt.QoS1 {
-				if publish, ok := record.Content.(*mqtt.Publish); ok {
-					publish.Dup = true
-					record.Content = publish
-					store.delivery <- record
-				}
-				if record.Qos == mqtt.QoS2 {
-					if publish, ok := record.Content.(*mqtt.Publish); ok {
-						publish.Dup = true
-						record.Content = publish
-						store.delivery <- record
-					}
-				}
-				record.Times++
+			if publish, ok := record.Content.(*mqtt.Publish); ok {
+				publish.Dup = true
+				record.Content = publish
+				store.delivery <- record
 			}
+			record.Times++
 		}
 		return nil
 	})
@@ -125,7 +116,7 @@ func (store *badgerStore) Complete(pid mqtt.PacketID) error {
 
 func (store *badgerStore) create(p *mqtt.Publish) (record *model.Record, err error) {
 	if p.Qos.Zero() {
-		return model.NewRecord(store.cid, p.Clone()), nil
+		return model.NewRecord(store.cid, p.Clone(), store.expiry), nil
 	}
 	err = store.db.Update(func(txn *badger.Txn) (err error) {
 		var currentID mqtt.PacketID
@@ -154,8 +145,8 @@ func (store *badgerStore) create(p *mqtt.Publish) (record *model.Record, err err
 		nextID := currentID + 1
 		np := p.Clone()
 		np.PacketID = currentID
-		r := model.NewRecord(store.cid, np)
-		buf, err := encodeRecord(r)
+		record = model.NewRecord(store.cid, np, config.Def.MQTTConfig.MessageExpiryInterval)
+		buf, err := encodeRecord(record)
 		if err != nil {
 			return err
 		}
@@ -173,7 +164,7 @@ func (store *badgerStore) create(p *mqtt.Publish) (record *model.Record, err err
 func (store *badgerStore) update(p mqtt.Message) error {
 	err := store.db.Update(func(txn *badger.Txn) (err error) {
 		currentID := p.PID()
-		r := model.NewRecord(store.cid, p)
+		r := model.NewRecord(store.cid, p, store.expiry)
 		buf, err := encodeRecord(r)
 		if err != nil {
 			return err
@@ -201,7 +192,14 @@ func (store *badgerStore) getRecordPrefix() []byte {
 
 func encodeRecord(r *model.Record) ([]byte, error) {
 	data := []byte{}
-	data = append(data, byte(r.Qos))
+	data = append(data, byte(r.Version))
+	data = binary.BigEndian.AppendUint64(data, r.Times)
+	data = binary.BigEndian.AppendUint64(data, uint64(r.Expiry))
+	if raw, err := mqtt.EncodeUTF8(r.ClientID); err != nil {
+		return nil, err
+	} else {
+		data = append(data, raw...)
+	}
 	if raw, err := r.Receive.MarshalBinary(); err != nil {
 		return nil, err
 	} else {
@@ -212,10 +210,6 @@ func encodeRecord(r *model.Record) ([]byte, error) {
 	} else {
 		data = append(data, raw...)
 	}
-	data = binary.BigEndian.AppendUint64(data, uint64(r.Expiry.Nanoseconds()))
-	data = append(data, byte(r.Version))
-	data = append(data, []byte(r.ClientID)...)
-	data = binary.BigEndian.AppendUint64(data, r.Times)
 	if raw, err := r.Content.Encode(); err != nil {
 		return nil, err
 	} else {
@@ -228,55 +222,38 @@ func decodeRecord(data []byte) (*model.Record, error) {
 	r := &model.Record{}
 	i := 0
 
-	// Qos
-	r.Qos = mqtt.QoS(data[i])
-	i++
-
-	// Receive time.Time (binary, variable length, so use UnmarshalBinary)
-	var t time.Time
-	if err := t.UnmarshalBinary(data[i : i+15]); err != nil { // 15 is typical size, adjust as needed
-		return nil, err
-	}
-	r.Receive = t
-	i += len(t.AppendFormat(nil, time.RFC3339Nano)) // or exact MarshalBinary size
-
-	// Send time.Time
-	var t2 time.Time
-	if err := t2.UnmarshalBinary(data[i : i+15]); err != nil {
-		return nil, err
-	}
-	r.Send = t2
-	i += len(t2.AppendFormat(nil, time.RFC3339Nano))
-
-	// Expiry Duration (8 bytes)
-	if len(data[i:]) < 8 {
-		return nil, fmt.Errorf("invalid expiry bytes")
-	}
-	r.Expiry = time.Duration(int64(binary.BigEndian.Uint64(data[i:])))
-	i += 8
-
 	r.Version = mqtt.ProtocolVersion(data[i])
 	i++
 
-	// ClientID (must store its length before writing in encode!)
-	clientIDLen := binary.BigEndian.Uint16(data[i : i+2])
-	i += 2
-	if len(data[i:]) < int(clientIDLen) {
-		return nil, fmt.Errorf("invalid clientID")
-	}
-	r.ClientID = string(data[i : i+int(clientIDLen)])
-	i += int(clientIDLen)
-
-	// Times (8 bytes)
-	if len(data[i:]) < 8 {
-		return nil, fmt.Errorf("invalid Times bytes")
-	}
 	r.Times = binary.BigEndian.Uint64(data[i:])
 	i += 8
-	packet, err := mqtt.Decode(r.Version, data[i:])
-	if err != nil {
+
+	r.Expiry = time.Duration(binary.BigEndian.Uint64(data[i:]))
+	i += 8
+
+	if clientID, n, err := mqtt.DecodeUTF8(data[i:]); err != nil {
+		return nil, err
+	} else {
+		r.ClientID = clientID
+		i += n
+	}
+
+	// Receive time.Time (binary, variable length, so use UnmarshalBinary)
+	if err := r.Receive.UnmarshalBinary(data[i : i+15]); err != nil { // 15 is typical size, adjust as needed
 		return nil, err
 	}
-	r.Content = packet
+	i += 15
+
+	// Send time.Time
+	if err := r.Send.UnmarshalBinary(data[i : i+15]); err != nil {
+		return nil, err
+	}
+	i += 15
+
+	if packet, err := mqtt.Decode(r.Version, data[i:]); err != nil {
+		return nil, err
+	} else {
+		r.Content = packet
+	}
 	return r, nil
 }

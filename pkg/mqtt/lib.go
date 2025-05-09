@@ -65,9 +65,17 @@ func Decode(version ProtocolVersion, data []byte) (packet Packet, err error) {
 	if packet == nil {
 		return nil, ErrMalformedPacket
 	}
-	if _, err = packet.Decode(data[i:]); err != nil {
+	if _, err = packet.DecodeBody(data[i:]); err != nil {
 		return
 	}
 	packet.SetVersion(version)
 	return
+}
+
+func EncodeUTF8(s string) ([]byte, error) {
+	return encodeUTF8Str(s)
+}
+
+func DecodeUTF8(data []byte) (string, int, error) {
+	return decodeUTF8Str(data)
 }

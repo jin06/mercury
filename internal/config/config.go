@@ -17,6 +17,10 @@ const (
 
 func Init(path string) (err error) {
 	Def, err = Parse(path)
+	if err != nil {
+		return
+	}
+	Def.MQTTConfig.MessageExpiryInterval = time.Hour * 24
 	return
 }
 

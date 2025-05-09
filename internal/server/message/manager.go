@@ -92,3 +92,10 @@ func (m *Manager) Set(cid string) (err error) {
 	m.clients[cid] = m.newStore(cid, m.delivery)
 	return
 }
+
+func (m *Manager) Del(cid string) (err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.clients, cid)
+	return nil
+}

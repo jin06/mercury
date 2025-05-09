@@ -50,7 +50,12 @@ func (g *generic) Register(c server.Client) error {
 	if c == nil {
 		return errors.New("client is nil")
 	}
-	g.manager.Set(c)
+	if err := g.manager.Set(c); err != nil {
+		return err
+	}
+	if err := g.msgManager.Set(c.ClientID()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -59,29 +64,31 @@ func (g *generic) Deregister(c server.Client) error {
 		return errors.New("client is nil")
 	}
 	g.manager.RemoveClient(c)
+	g.msgManager.Del(c.ClientID())
 	return nil
 }
 
 func (g *generic) HandlePacket(packet mqtt.Packet, cid string) (resp mqtt.Packet, err error) {
 	switch p := packet.(type) {
 	case *mqtt.Publish:
-		return g.HandlePublish(p, cid)
+		resp, err = g.HandlePublish(p, cid)
+	case *mqtt.Puback:
+		err = g.HandlePuback(p, cid)
 	case *mqtt.Pingreq:
-		return g.HandlePingreq(p, cid)
+		resp, err = g.HandlePingreq(p, cid)
 	case *mqtt.Pubrec:
-		return g.HandlePubrec(p, cid)
+		resp, err = g.HandlePubrec(p, cid)
 	case *mqtt.Pubrel:
-		return g.HandlePubrel(p, cid)
+		resp, err = g.HandlePubrel(p, cid)
 	case *mqtt.Pubcomp:
-		return g.HandlePubcomp(p, cid)
+		resp, err = g.HandlePubcomp(p, cid)
 	case *mqtt.Subscribe:
-		return g.HandleSubscribe(p, cid)
+		resp, err = g.HandleSubscribe(p, cid)
 	case *mqtt.Unsubscribe:
-		return g.HandleUnsubscribe(p, cid)
+		resp, err = g.HandleUnsubscribe(p, cid)
 	case *mqtt.Disconnect:
-		return nil, g.HandleDisconnect(p, cid)
+		err = g.HandleDisconnect(p, cid)
 	case *mqtt.Auth:
-		return
 	}
 	return
 }

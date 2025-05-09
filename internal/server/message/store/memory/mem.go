@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
@@ -15,7 +16,7 @@ func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
 		nextFreeID: 1,
 		// max:            mqtt.MAX_PACKET_ID,
-		expiry:         time.Hour * 24,
+		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		delivery:       delivery,
 		resendDuration: time.Second * 5,
 		closing:        make(chan struct{}),
@@ -70,7 +71,7 @@ func (s *memStore) Publish(p *mqtt.Publish) (*model.Record, error) {
 
 func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 	if p.Qos.Zero() {
-		return model.NewRecord(s.cid, p.Clone()), nil
+		return model.NewRecord(s.cid, p.Clone(), s.expiry), nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -81,7 +82,7 @@ func (s *memStore) save(p *mqtt.Publish) (*model.Record, error) {
 		}
 		np := p.Clone()
 		np.PacketID = id
-		r := model.NewRecord(s.cid, np)
+		r := model.NewRecord(s.cid, np, s.expiry)
 		s.used[id] = r
 		return r, nil
 	}
@@ -115,22 +116,12 @@ func (s *memStore) resend() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, record := range s.used {
-		if record.Qos == mqtt.QoS1 {
-			publish, ok := record.Content.(*mqtt.Publish)
-			if ok {
-				publish.Dup = true
-				record.Content = publish
-				s.delivery <- record
-			}
-		}
-		if record.Qos == mqtt.QoS2 {
-			if publish, ok := record.Content.(*mqtt.Publish); ok {
-				publish.Dup = true
-				record.Content = publish
-				s.delivery <- record
-			}
+		if publish, ok := record.Content.(*mqtt.Publish); ok {
+			publish.Dup = true
+			record.Content = publish
 			s.delivery <- record
 		}
+		s.delivery <- record
 		record.Times++
 	}
 }

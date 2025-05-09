@@ -25,7 +25,9 @@ func init() {
 			}
 			b := broker.NewBroker()
 			ctx := context.TODO()
-			b.Run(ctx)
+			if err := b.Run(ctx); err != nil {
+				panic(err)
+			}
 			return nil
 		},
 	}

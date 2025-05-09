@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -20,13 +21,14 @@ type Manager struct {
 	mu      sync.Mutex
 }
 
-func (m *Manager) Set(c Client) {
+func (m *Manager) Set(c Client) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.clients[c.ClientID()] != nil {
-		return
+		return errors.New("duplicate client")
 	}
 	m.clients[c.ClientID()] = c
+	return nil
 }
 
 func (m *Manager) Remove(id string) {
