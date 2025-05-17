@@ -1,6 +1,7 @@
 package badgerStore
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"time"
@@ -24,6 +25,18 @@ func Init(options config.BadgerConfig) (err error) {
 	return
 }
 
+func New(cid string) *badgerStore {
+	s := &badgerStore{
+		options:        config.Def.MessageStore.BadgerConfig,
+		db:             def,
+		cid:            cid,
+		resendDuration: time.Second * 5,
+		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
+		closing:        make(chan struct{}),
+	}
+	return s
+}
+
 func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
 	s := &badgerStore{
 		options:        config.Def.MessageStore.BadgerConfig,
@@ -34,7 +47,6 @@ func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		closing:        make(chan struct{}),
 	}
-	go s.run()
 	return s
 }
 
@@ -48,20 +60,22 @@ type badgerStore struct {
 	closing        chan struct{}
 }
 
-func (s *badgerStore) run() error {
+func (s *badgerStore) Run(ctx context.Context, ch chan mqtt.Packet) error {
 	ticker := time.NewTicker(s.resendDuration)
 	defer ticker.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case <-s.closing:
 			return nil
 		case <-ticker.C:
-			s.resend()
+			s.resend(ch)
 		}
 	}
 }
 
-func (store *badgerStore) resend() {
+func (store *badgerStore) resend(ch chan mqtt.Packet) {
 	store.db.View(func(txn *badger.Txn) error {
 		prefix := store.getRecordPrefix()
 		opts := badger.DefaultIteratorOptions
@@ -83,11 +97,12 @@ func (store *badgerStore) resend() {
 				logger.Error(err)
 				continue
 			}
-			if publish, ok := record.Content.(*mqtt.Publish); ok {
-				publish.Dup = true
-				record.Content = publish
-				store.delivery <- record
-			}
+			ch <- record.Content
+			// if publish, ok := record.Content.(*mqtt.Publish); ok {
+			// 	publish.Dup = true
+			// 	record.Content = publish
+			// 	store.delivery <- record
+			// }
 			record.Times++
 		}
 		return nil
@@ -107,7 +122,9 @@ func (store *badgerStore) Receive(p *mqtt.Pubrel) error {
 }
 
 func (store *badgerStore) Release(p *mqtt.Pubcomp) error {
-	return store.update(p)
+	return store.delete(p.PacketID)
+	// return nil
+	// return store.update(p)
 }
 
 func (store *badgerStore) Complete(pid mqtt.PacketID) error {

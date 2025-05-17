@@ -10,7 +10,9 @@ import (
 	"unsafe"
 
 	"github.com/google/uuid"
+	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/server"
+	"github.com/jin06/mercury/internal/server/message/store"
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
@@ -49,6 +51,7 @@ type generic struct {
 	keep          time.Time
 	db            *recordDB
 	connectedTime time.Time
+	msgStore      store.Store
 }
 
 func (c *generic) ClientID() string {
@@ -89,6 +92,8 @@ func (c *generic) connect() (err error) {
 
 	c.Reader.Version = cp.Version
 	c.id = cp.ClientID
+
+	c.msgStore = store.NewStore(c.id, config.Def.MessageStore.Mode)
 
 	fmt.Printf("[IN] - [%s] | %v \n", cp.ClientID, cp)
 
@@ -151,6 +156,14 @@ func (c *generic) runloop(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		if err := c.recordLoop(ctx); err != nil {
+			c.stop(err)
+			return
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := c.msgStore.Run(ctx, c.output); err != nil {
 			c.stop(err)
 			return
 		}

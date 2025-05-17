@@ -1,6 +1,7 @@
 package memStore
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -9,6 +10,19 @@ import (
 	"github.com/jin06/mercury/internal/utils"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
+
+func New(cid string) *memStore {
+	s := &memStore{
+		cid:        cid,
+		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
+		nextFreeID: 1,
+		// max:            mqtt.MAX_PACKET_ID,
+		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
+		resendDuration: time.Second * 5,
+		closing:        make(chan struct{}),
+	}
+	return s
+}
 
 func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 	s := &memStore{
@@ -21,7 +35,6 @@ func NewMemStore(cid string, delivery chan *model.Record) *memStore {
 		resendDuration: time.Second * 5,
 		closing:        make(chan struct{}),
 	}
-	go s.run()
 	return s
 }
 
@@ -99,29 +112,32 @@ func (s *memStore) delete(pid mqtt.PacketID) (bool, error) {
 	return has, nil
 }
 
-func (s *memStore) run() error {
+func (s *memStore) Run(ctx context.Context, ch chan mqtt.Packet) error {
 	ticker := time.NewTicker(s.resendDuration)
 	defer ticker.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case <-s.closing:
 			return nil
 		case <-ticker.C:
-			s.resend()
+			s.resend(ch)
 		}
 	}
 }
 
-func (s *memStore) resend() {
+func (s *memStore) resend(ch chan mqtt.Packet) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, record := range s.used {
-		if publish, ok := record.Content.(*mqtt.Publish); ok {
-			publish.Dup = true
-			record.Content = publish
-			s.delivery <- record
-		}
-		s.delivery <- record
+		// if publish, ok := record.Content.(*mqtt.Publish); ok {
+		// publish.Dup = true
+		// record.Content = publish
+		// s.delivery <- record
+		// }
+		// s.delivery <- record
+		ch <- record.Content
 		record.Times++
 	}
 }
