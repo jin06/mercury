@@ -122,39 +122,28 @@ func (c *generic) disconnect(p *mqtt.Disconnect) (err error) {
 
 func (c *generic) runloop(ctx context.Context) error {
 	go func() {
-		if err := c.inputLoop(ctx); err != nil {
-			c.stop(err)
-			return
-		}
+		err := c.inputLoop(ctx)
+		c.stop(err)
 	}()
 	go func() {
-		if err := c.outputLoop(ctx); err != nil {
-			c.stop(err)
-			return
-		}
+		err := c.outputLoop(ctx)
+		c.stop(err)
 	}()
 	go func() {
-		if err := c.handleLoop(ctx); err != nil {
-			c.stop(err)
-			return
-		}
+		err := c.handleLoop(ctx)
+		c.stop(err)
 	}()
 	go func() {
-		if err := c.keepLoop(ctx); err != nil {
-			c.stop(err)
-			return
-		}
+		err := c.keepLoop(ctx)
+		c.stop(err)
 	}()
 	go func() {
-		if err := c.recordLoop(ctx); err != nil {
-			c.stop(err)
-			return
-		}
+		err := c.recordLoop(ctx)
+		c.stop(err)
 	}()
 	go func() {
-		if err := c.msgStore.Run(ctx, c.output); err != nil {
-			return
-		}
+		err := c.msgStore.Run(ctx, c.output)
+		c.stop(err)
 	}()
 	<-c.stopping
 	return nil
