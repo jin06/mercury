@@ -52,6 +52,7 @@ type generic struct {
 	db            *recordDB
 	connectedTime time.Time
 	msgStore      store.Store
+	cleanSession  bool
 }
 
 func (c *generic) ClientID() string {
@@ -92,8 +93,9 @@ func (c *generic) connect() (err error) {
 
 	c.Reader.Version = cp.Version
 	c.id = cp.ClientID
+	c.cleanSession = cp.Clean
 
-	c.msgStore = store.NewStore(c.id, config.Def.MessageStore.Mode)
+	c.msgStore = store.NewStore(config.Def.MessageStore.Mode, c.id, c.cleanSession)
 
 	fmt.Printf("[IN] - [%s] | %v \n", cp.ClientID, cp)
 
@@ -119,56 +121,42 @@ func (c *generic) disconnect(p *mqtt.Disconnect) (err error) {
 }
 
 func (c *generic) runloop(ctx context.Context) error {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.inputLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
 	}()
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.outputLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
 	}()
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.handleLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
 	}()
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.keepLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
 	}()
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.recordLoop(ctx); err != nil {
 			c.stop(err)
 			return
 		}
 	}()
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		if err := c.msgStore.Run(ctx, c.output); err != nil {
-			c.stop(err)
 			return
 		}
 	}()
-	wg.Wait()
+	<-c.stopping
 	return nil
 }
 
@@ -326,6 +314,10 @@ func (c *generic) Close(ctx context.Context) (err error) {
 	}
 	if c.Connection != nil {
 		c.Connection.Close()
+	}
+	if c.msgStore != nil {
+		c.msgStore.Close()
+		c.msgStore.Clean()
 	}
 	err = c.handler.Deregister(c)
 	return

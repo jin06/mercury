@@ -25,7 +25,7 @@ func Init(options config.BadgerConfig) (err error) {
 	return
 }
 
-func New(cid string) *badgerStore {
+func New(cid string, clean bool) *badgerStore {
 	s := &badgerStore{
 		options:        config.Def.MessageStore.BadgerConfig,
 		db:             def,
@@ -33,6 +33,7 @@ func New(cid string) *badgerStore {
 		resendDuration: time.Second * 5,
 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		closing:        make(chan struct{}),
+		clean:          clean,
 	}
 	return s
 }
@@ -58,6 +59,7 @@ type badgerStore struct {
 	resendDuration time.Duration
 	delivery       chan *model.Record
 	closing        chan struct{}
+	clean          bool
 }
 
 func (s *badgerStore) Run(ctx context.Context, ch chan mqtt.Packet) error {
@@ -107,6 +109,16 @@ func (store *badgerStore) resend(ch chan mqtt.Packet) {
 		}
 		return nil
 	})
+}
+
+func (store *badgerStore) Clean() (err error) {
+	if err = store.db.DropPrefix([]byte(store.getRecordPrefix())); err != nil {
+		return
+	}
+	if err = store.db.DropPrefix([]byte(store.getPacketIDKey())); err != nil {
+		return
+	}
+	return
 }
 
 func (store *badgerStore) Publish(p *mqtt.Publish) (*model.Record, error) {
@@ -273,4 +285,9 @@ func decodeRecord(data []byte) (*model.Record, error) {
 		r.Content = packet
 	}
 	return r, nil
+}
+
+func (b *badgerStore) Close() error {
+	close(b.closing)
+	return nil
 }

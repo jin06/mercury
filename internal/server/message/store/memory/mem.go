@@ -11,7 +11,7 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func New(cid string) *memStore {
+func New(cid string, clean bool) *memStore {
 	s := &memStore{
 		cid:        cid,
 		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
@@ -20,6 +20,7 @@ func New(cid string) *memStore {
 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		resendDuration: time.Second * 5,
 		closing:        make(chan struct{}),
+		clean:          clean,
 	}
 	return s
 }
@@ -48,6 +49,7 @@ type memStore struct {
 	delivery       chan *model.Record
 	closing        chan struct{}
 	resendDuration time.Duration
+	clean          bool
 }
 
 func (s *memStore) Receive(p *mqtt.Pubrel) error {
@@ -56,6 +58,10 @@ func (s *memStore) Receive(p *mqtt.Pubrel) error {
 	if s.used[p.PacketID] != nil {
 		s.used[p.PacketID].Content = p
 	}
+	return nil
+}
+
+func (s *memStore) Clean() error {
 	return nil
 }
 
