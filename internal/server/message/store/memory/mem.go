@@ -11,45 +11,43 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func New(cid string, clean bool) *memStore {
+func New(cid string) *memStore {
 	s := &memStore{
 		cid:        cid,
 		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
 		nextFreeID: 1,
 		// max:            mqtt.MAX_PACKET_ID,
 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
-		resendDuration: time.Second * 5,
-		closing:        make(chan struct{}),
-		clean:          clean,
-	}
-	return s
-}
-
-func NewMemStore(cid string, delivery chan *model.Record) *memStore {
-	s := &memStore{
-		cid:        cid,
-		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
-		nextFreeID: 1,
-		// max:            mqtt.MAX_PACKET_ID,
-		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
-		delivery:       delivery,
 		resendDuration: time.Second * 5,
 		closing:        make(chan struct{}),
 	}
 	return s
 }
+
+// func NewMemStore(cid string, delivery chan *model.Record) *memStore {
+// 	s := &memStore{
+// 		cid:        cid,
+// 		used:       make(map[mqtt.PacketID]*model.Record, mqtt.MAX_PACKET_ID),
+// 		nextFreeID: 1,
+// 		// max:            mqtt.MAX_PACKET_ID,
+// 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
+// 		delivery:       delivery,
+// 		resendDuration: time.Second * 5,
+// 		closing:        make(chan struct{}),
+// 	}
+// 	return s
+// }
 
 type memStore struct {
 	cid        string
 	used       map[mqtt.PacketID]*model.Record
 	nextFreeID mqtt.PacketID
 	// max            mqtt.PacketID
-	mu             sync.Mutex
-	expiry         time.Duration
-	delivery       chan *model.Record
+	mu     sync.Mutex
+	expiry time.Duration
+	// delivery       chan *model.Record
 	closing        chan struct{}
 	resendDuration time.Duration
-	clean          bool
 }
 
 func (s *memStore) Receive(p *mqtt.Pubrel) error {

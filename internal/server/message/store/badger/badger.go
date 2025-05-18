@@ -25,31 +25,30 @@ func Init(options config.BadgerConfig) (err error) {
 	return
 }
 
-func New(cid string, clean bool) *badgerStore {
+func New(cid string) *badgerStore {
 	s := &badgerStore{
 		options:        config.Def.MessageStore.BadgerConfig,
 		db:             def,
 		cid:            cid,
-		resendDuration: time.Second * 5,
-		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
-		closing:        make(chan struct{}),
-		clean:          clean,
-	}
-	return s
-}
-
-func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
-	s := &badgerStore{
-		options:        config.Def.MessageStore.BadgerConfig,
-		db:             def,
-		cid:            cid,
-		delivery:       delivery,
 		resendDuration: time.Second * 5,
 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
 		closing:        make(chan struct{}),
 	}
 	return s
 }
+
+// func NewBadgerStore(cid string, delivery chan *model.Record) *badgerStore {
+// 	s := &badgerStore{
+// 		options:        config.Def.MessageStore.BadgerConfig,
+// 		db:             def,
+// 		cid:            cid,
+// 		delivery:       delivery,
+// 		resendDuration: time.Second * 5,
+// 		expiry:         config.Def.MQTTConfig.MessageExpiryInterval,
+// 		closing:        make(chan struct{}),
+// 	}
+// 	return s
+// }
 
 type badgerStore struct {
 	options        config.BadgerConfig
@@ -57,9 +56,8 @@ type badgerStore struct {
 	cid            string
 	expiry         time.Duration
 	resendDuration time.Duration
-	delivery       chan *model.Record
-	closing        chan struct{}
-	clean          bool
+	// delivery       chan *model.Record
+	closing chan struct{}
 }
 
 func (s *badgerStore) Run(ctx context.Context, ch chan mqtt.Packet) error {
@@ -100,11 +98,6 @@ func (store *badgerStore) resend(ch chan mqtt.Packet) {
 				continue
 			}
 			ch <- record.Content
-			// if publish, ok := record.Content.(*mqtt.Publish); ok {
-			// 	publish.Dup = true
-			// 	record.Content = publish
-			// 	store.delivery <- record
-			// }
 			record.Times++
 		}
 		return nil

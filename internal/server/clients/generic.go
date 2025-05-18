@@ -95,7 +95,7 @@ func (c *generic) connect() (err error) {
 	c.id = cp.ClientID
 	c.cleanSession = cp.Clean
 
-	c.msgStore = store.NewStore(config.Def.MessageStore.Mode, c.id, c.cleanSession)
+	c.msgStore = store.NewStore(config.Def.MessageStore.Mode, c.id)
 
 	fmt.Printf("[IN] - [%s] | %v \n", cp.ClientID, cp)
 

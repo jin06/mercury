@@ -10,13 +10,13 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewStore(mode string, cid string, clean bool) Store {
+func NewStore(mode string, cid string) Store {
 	var s Store
 	switch mode {
 	case "memory":
-		s = memStore.New(cid, clean)
+		s = memStore.New(cid)
 	case "badger":
-		s = badgerStore.New(cid, clean)
+		s = badgerStore.New(cid)
 	case "redis":
 	default:
 		panic("memory store: " + config.Def.MessageStore.Mode)
