@@ -60,7 +60,7 @@ func decodeUTF8(data []byte) (res []byte, n int, err error) {
 	return data[2:total], total, nil
 }
 
-func encodeUTF8Str[T string | UTF8String](s T) ([]byte, error) {
+func encodeUTF8Str[T string | UTF8String | Topic](s T) ([]byte, error) {
 	return encodeUTF8([]byte(s))
 }
 

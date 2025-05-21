@@ -255,14 +255,14 @@ func (c *generic) Read() (mqtt.Packet, error) {
 	return p, nil
 }
 
-func (c *generic) Write(p mqtt.Packet) (err error) {
+func (c *generic) Write(p mqtt.Packet) error {
 	// defer func(e *error) {
 	// 	if r := recover(); r != nil {
 	// 		*e = utils.ErrClosedChannel
 	// 	}
 	// }(&err)
 	c.output <- p
-	return
+	return nil
 }
 
 func (c *generic) stop(err error) {

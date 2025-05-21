@@ -4,13 +4,19 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jin06/mercury/internal/model"
 	"github.com/jin06/mercury/pkg/mqtt"
 )
+
+type RetainManager interface {
+	Insert(publish *mqtt.Publish) (bool, error)
+	Get(topic string) *mqtt.Publish
+}
 
 type trieNodeRetain struct {
 	children map[string]*trieNodeRetain
 	// subs     map[string]*model.Record
-	publish *mqtt.Publish
+	content model.Retain
 	mu      sync.RWMutex
 }
 
@@ -27,21 +33,21 @@ func NewTrieRetain() *trieSubRetain {
 	}
 }
 
-func (t *trieSubRetain) Insert(topic string, publish *mqtt.Publish) (bool, error) {
-	tf, err := NewTF(topic)
-	if err != nil {
-		return false, err
-	}
+func (t *trieSubRetain) Insert(p *mqtt.Publish) (bool, error) {
+	// tf, err := NewTF(topic)
+	// return false, err
+	// }
 	node := t.root
 	var has bool
 
-	for _, part := range tf.Parts {
+	content := model.NewRetain(*p)
+	for _, part := range p.Topic.Split() {
 		node.mu.Lock()
 		child, ok := node.children[part]
 		if !ok {
 			child = &trieNodeRetain{
 				children: make(map[string]*trieNodeRetain),
-				publish:  publish,
+				content:  model.NewRetain(*p),
 			}
 			node.children[part] = child
 		}
@@ -51,7 +57,7 @@ func (t *trieSubRetain) Insert(topic string, publish *mqtt.Publish) (bool, error
 
 	node.mu.Lock()
 	defer node.mu.Unlock()
-	node.publish = publish
+	node.content = content
 
 	return has, nil
 }
@@ -74,5 +80,5 @@ func (t *trieSubRetain) Get(topic string) *mqtt.Publish {
 	}
 	node.mu.RLock()
 	defer node.mu.RUnlock()
-	return node.publish
+	return &node.content.Publish
 }

@@ -18,6 +18,8 @@ var (
 	ErrInvalidQoS         = errors.New("invalid QoS")
 	ErrInsufficientData   = errors.New("insufficient data")
 	ErrNotUint16          = errors.New("value out of uint16 range")
+	ErrTopicIsEmpty       = errors.New("topic is empty")
+	ErrNotValidTopic      = errors.New("not valid topic")
 )
 
 type ProtocolError struct{}

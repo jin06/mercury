@@ -14,21 +14,23 @@ import (
 func newGeneric() *generic {
 	ch := make(chan *model.Record, 2000)
 	server := &generic{
-		manager:    server.NewManager(),
-		subManager: subscriptions.NewTrie(),
-		msgManager: *message.NewManager(ch),
-		ch:         ch,
-		closing:    make(chan struct{}),
+		manager:       server.NewManager(),
+		subManager:    subscriptions.NewTrie(),
+		msgManager:    message.NewManager(ch),
+		retainManager: subscriptions.NewTrieRetain(),
+		ch:            ch,
+		closing:       make(chan struct{}),
 	}
 	return server
 }
 
 type generic struct {
-	manager    *server.Manager
-	subManager subscriptions.SubManager
-	msgManager message.Manager
-	ch         chan *model.Record
-	closing    chan struct{}
+	manager       *server.Manager
+	subManager    subscriptions.SubManager
+	msgManager    *message.Manager
+	retainManager subscriptions.RetainManager
+	ch            chan *model.Record
+	closing       chan struct{}
 }
 
 func (g *generic) Run(ctx context.Context) error {
@@ -49,6 +51,11 @@ func (g *generic) Run(ctx context.Context) error {
 func (g *generic) Register(c server.Client) error {
 	if c == nil {
 		return errors.New("client is nil")
+	}
+	if cli := g.manager.Get(c.ClientID()); cli != nil {
+		if err := cli.Close(context.TODO()); err != nil {
+			return err
+		}
 	}
 	if err := g.manager.Set(c); err != nil {
 		return err
@@ -114,6 +121,9 @@ func (g *generic) HandlePublish(p *mqtt.Publish, cid string) (resp mqtt.Packet, 
 			return
 		}
 	}
+	if p.Retain {
+		g.retainManager.Insert(p)
+	}
 	return
 }
 
@@ -140,11 +150,23 @@ func (g *generic) HandlePubcomp(p *mqtt.Pubcomp, cid string) (resp mqtt.Packet, 
 }
 
 func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Suback, err error) {
+	list := []*mqtt.Publish{}
 	for _, sub := range p.Subscriptions {
 		if _, err = g.subManager.Sub(sub.TopicFilter, cid); err != nil {
 			return nil, err
 		}
+
+		if publish := g.retainManager.Get(sub.TopicFilter); publish != nil {
+			list = append(list, publish)
+		}
 	}
+
+	for _, publish := range list {
+		if client := g.manager.Get(cid); client != nil {
+			client.Write(publish)
+		}
+	}
+
 	resp = p.Response()
 	return
 }

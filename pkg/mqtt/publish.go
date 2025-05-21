@@ -19,7 +19,7 @@ type Publish struct {
 	Dup        bool
 	Qos        QoS
 	Retain     bool
-	Topic      UTF8String
+	Topic      Topic
 	Payload    []byte
 	Properties *Properties
 }
