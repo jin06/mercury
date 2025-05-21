@@ -23,6 +23,7 @@ func NewClient(handler server.Server, conn io.ReadWriteCloser) *generic {
 		Connection: mqtt.NewConnection(conn),
 		stopping:   make(chan struct{}),
 		closed:     make(chan struct{}),
+		closeOnce:  sync.Once{},
 		options:    DefaultOptions(),
 		input:      make(chan mqtt.Packet, 2000),
 		output:     make(chan mqtt.Packet, 2000),
@@ -42,6 +43,7 @@ type generic struct {
 	stopping  chan struct{}
 	stopOnce  sync.Once
 	closed    chan struct{}
+	closeOnce sync.Once
 	disOnce   sync.Once
 	err       error // first error that occurs exits the client
 	// packet channels
@@ -296,19 +298,21 @@ func (c *generic) KeepAlive() {
 }
 
 func (c *generic) Close(ctx context.Context) (err error) {
-	if c.connected {
-		if c.err != nil {
-			c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}, c.Version))
+	c.closeOnce.Do(func() {
+		if c.connected {
+			if c.err != nil {
+				c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}, c.Version))
+			}
 		}
-	}
-	if c.Connection != nil {
-		c.Connection.Close()
-	}
-	if c.msgStore != nil {
-		c.msgStore.Close()
-		c.msgStore.Clean()
-	}
-	err = c.handler.Deregister(c)
+		if c.Connection != nil {
+			c.Connection.Close()
+		}
+		if c.msgStore != nil {
+			c.msgStore.Close()
+			c.msgStore.Clean()
+		}
+		err = c.handler.Deregister(c)
+	})
 	return
 }
 
