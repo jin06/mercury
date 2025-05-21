@@ -195,21 +195,31 @@ func (c *Connect) DecodeBody(data []byte) (int, error) {
 	}
 	// Decode Will Message (if Will Flag is set)
 	if c.WillFlag {
-		if c.Version.IsMQTT5() {
-			c.Will.Properties.Decode(data[start:])
-		}
-		if topic, n, err := decodeUTF8Str(data[start:]); err != nil {
+		c.Will.Version = c.Version
+		if n, err := c.Will.Decode(data[start:]); err != nil {
 			return start, err
 		} else {
-			c.Will.Topic = topic
-			start = start + n
+			start += n
 		}
-		if message, n, err := decodeUTF8Str(data[start:]); err != nil {
-			return start, err
-		} else {
-			c.Will.Message = message
-			start = start + n
-		}
+		// if c.Version.IsMQTT5() {
+		// 	n, err := c.Will.Properties.Decode(data[start:])
+		// 	if err != nil {
+		// 		return start, err
+		// 	}
+		// 	start += n
+		// }
+		// if topic, n, err := decodeUTF8Str(data[start:]); err != nil {
+		// 	return start, err
+		// } else {
+		// 	c.Will.Topic = topic
+		// 	start = start + n
+		// }
+		// if message, n, err := decodeUTF8Str(data[start:]); err != nil {
+		// 	return start, err
+		// } else {
+		// 	c.Will.Message = message
+		// 	start = start + n
+		// }
 	}
 	if c.UserNameFlag {
 		// Decode Username (if Username Flag is set)

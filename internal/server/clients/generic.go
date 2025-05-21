@@ -55,6 +55,7 @@ type generic struct {
 	connectedTime time.Time
 	msgStore      store.Store
 	cleanSession  bool
+	will          *mqtt.Will
 }
 
 func (c *generic) ClientID() string {
@@ -111,6 +112,7 @@ func (c *generic) connect() (err error) {
 
 	c.connected = true
 	c.connectedTime = time.Now()
+	c.will = cp.Will
 
 	return nil
 }
@@ -300,6 +302,9 @@ func (c *generic) KeepAlive() {
 func (c *generic) Close(ctx context.Context) (err error) {
 	c.closeOnce.Do(func() {
 		if c.connected {
+			if c.will != nil {
+				c.handler.HandlePacket(c.will.ToPublish(), c.id)
+			}
 			if c.err != nil {
 				c.disconnect(mqtt.NewDisconnect(&mqtt.FixedHeader{}, c.Version))
 			}

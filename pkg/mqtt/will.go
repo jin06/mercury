@@ -1,13 +1,5 @@
 package mqtt
 
-type Will struct {
-	Topic      string
-	Message    string
-	QoS        QoS
-	Retain     bool
-	Properties *Properties
-}
-
 type WillProperties struct {
 	// DelayInterval in seconds
 	DelayInterval          uint32
@@ -17,6 +9,26 @@ type WillProperties struct {
 	ContentType               string
 	ResponseTopic             string
 	CorrelationData           string
+}
+type Will struct {
+	Version    ProtocolVersion
+	Topic      string
+	Message    string
+	QoS        QoS
+	Retain     bool
+	Properties *Properties
+}
+
+func (w *Will) ToPublish() *Publish {
+	header := &FixedHeader{
+		PacketType: PUBLISH,
+	}
+	p := NewPublish(header, w.Version)
+	p.Topic = Topic(w.Topic)
+	p.Payload = []byte(w.Message)
+	p.Retain = w.Retain
+	p.Properties = w.Properties
+	return p
 }
 
 func (w *Will) Encode() ([]byte, error) {
@@ -57,13 +69,25 @@ func (w *Will) Encode() ([]byte, error) {
 func (w *Will) Decode(data []byte) (int, error) {
 	var start int
 
-	// Decode Topic
-	topic, n, err := decodeUTF8Str(data[start:])
-	if err != nil {
-		return start, err
+	// Decode Properties if present
+	if w.Version == MQTT5 {
+		if w.Properties == nil {
+			w.Properties = new(Properties)
+		}
+		n, err := w.Properties.Decode(data[start:])
+		if err != nil {
+			return start, err
+		}
+		start += n
 	}
-	w.Topic = topic
-	start += n
+
+	// Decode Topic
+	if topic, n, err := decodeUTF8Str(data[start:]); err != nil {
+		return start, err
+	} else {
+		w.Topic = topic
+		start += n
+	}
 
 	// Decode Message
 	message, n, err := decodeUTF8Str(data[start:])
@@ -72,23 +96,7 @@ func (w *Will) Decode(data []byte) (int, error) {
 	}
 	w.Message = message
 	start += n
-
-	// Decode QoS and Retain
-	w.QoS = QoS(data[start] & 0b00000011)
-	w.Retain = data[start]&0b00000001 == 0b00000001
-	start++
-
-	// Decode Properties (MQTT 5.0 only)
-	if len(data) > start {
-		w.Properties = new(Properties)
-		n, err := w.Properties.Decode(data[start:])
-		if err != nil {
-			return start, err
-		}
-		start += n
-	}
-
-	return len(data), nil
+	return start, nil
 }
 
 func (w *Will) Read(r *Reader) error {
