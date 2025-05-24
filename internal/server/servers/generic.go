@@ -156,8 +156,8 @@ func (g *generic) HandleSubscribe(p *mqtt.Subscribe, cid string) (resp *mqtt.Sub
 			return nil, err
 		}
 
-		if publish := g.retainManager.Get(sub.TopicFilter); publish != nil {
-			list = append(list, publish)
+		if publishes := g.retainManager.Get(sub.TopicFilter); len(publishes) > 0 {
+			list = append(list, publishes...)
 		}
 	}
 

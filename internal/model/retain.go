@@ -6,8 +6,8 @@ import (
 	"github.com/jin06/mercury/pkg/mqtt"
 )
 
-func NewRetain(publish mqtt.Publish) Retain {
-	return Retain{
+func NewRetain(publish mqtt.Publish) *Retain {
+	return &Retain{
 		Publish: publish,
 		Time:    time.Now(),
 		Expiry:  time.Minute * 60 * 24,
