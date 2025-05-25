@@ -37,7 +37,7 @@ func Parse(path string) (*Config, error) {
 type Config struct {
 	Listeners    []Listener   `yaml:"listeners"`
 	MQTTConfig   MQTTConfig   `yaml:"mqtt"`
-	DBConfig     DBConfig     `yaml:"db"`
+	Database     Database     `yaml:"database"`
 	Mode         Mode         `yaml:"mode"`
 	MessageStore MessageStore `yaml:"message_store"`
 }
@@ -71,13 +71,9 @@ type MQTTConfig struct {
 	MessageExpiryInterval  time.Duration `yaml:"message_expiry_interval"`
 }
 
-type DBConfig struct {
-	Driver   string `yaml:"driver"` //  mysql,postgres
-	User     string `yaml:"user"`   //
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	Database string `yaml:"database"`
+type Database struct {
+	Type string `json:"type"`
+	DSN  string `json:"dsn"`
 }
 
 type BadgerConfig struct {

@@ -12,22 +12,28 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func NewClient(cfg *config.DBConfig) (db *gorm.DB, err error) {
+var Default *gorm.DB
+
+func Init() error {
+	db, err := NewClient(&config.Def.Database)
+	if err != nil {
+		return err
+	}
+	Default = db
+	return nil
+}
+
+func NewClient(cfg *config.Database) (db *gorm.DB, err error) {
 	var dialector gorm.Dialector
 
-	switch cfg.Driver {
+	switch cfg.Type {
 	case "mysql":
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
-		dialector = mysql.Open(dsn)
+		dialector = mysql.Open(cfg.DSN)
 
 	case "postgres":
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database)
-		dialector = postgres.Open(dsn)
-
+		dialector = postgres.Open(cfg.DSN)
 	default:
-		return nil, fmt.Errorf("unsupported database driver: %s", cfg.Driver)
+		return nil, fmt.Errorf("unsupported database driver: %s", cfg.Type)
 	}
 
 	// GORM 配置

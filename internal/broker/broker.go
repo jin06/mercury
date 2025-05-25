@@ -7,11 +7,13 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/jin06/mercury/internal/admin"
 	"github.com/jin06/mercury/internal/config"
 	"github.com/jin06/mercury/internal/server"
 	"github.com/jin06/mercury/internal/server/clients"
 	badgerStore "github.com/jin06/mercury/internal/server/message/store/badger"
 	"github.com/jin06/mercury/internal/server/servers"
+	"github.com/jin06/mercury/internal/store"
 )
 
 func NewBroker() *Broker {
@@ -38,6 +40,14 @@ func (b *Broker) Run(ctx context.Context) (err error) {
 	if err = badgerStore.Init(config.Def.MessageStore.BadgerConfig); err != nil {
 		return
 	}
+	if err = store.Init(); err != nil {
+		return
+	}
+	go func() {
+		if err := admin.Run(ctx); err != nil {
+			log.Error().Err(err).Msg("server run error")
+		}
+	}()
 	return b.listen(ctx)
 }
 

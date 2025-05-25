@@ -2,8 +2,7 @@ package model
 
 import "time"
 
-// Account represents the account information for an MQTT user.
-type Account struct {
+type User struct {
 	ID         uint64    `json:"id" gorm:"primaryKey"`           // Unique identifier for the account
 	Username   string    `json:"username" gorm:"username"`       // Username
 	Password   string    `json:"password" gorm:"password"`       // Password
@@ -13,6 +12,6 @@ type Account struct {
 	LoginCount uint64    `json:"login_count" gorm:"login_count"` // Number of times the account has logged in
 }
 
-func (a *Account) TableName() string {
+func (a *User) TableName() string {
 	return "accounts"
 }

@@ -4,6 +4,10 @@ listeners:
   - type: tcp
     addr: 0.0.0.0:1883
 
+database:
+  type: mysql # Specifies the type of database to use. Options include 'mysql', 'postgres'.
+  dsn: root:123456@tcp(127.0.0.1:3306)/mecury?charset=utf8mb4&parseTime=True&loc=Local
+
 mqtt:
 # Specifies the maximum time (in seconds) that a retained or undelivered 
 # QoS 1/QoS 2 message will remain in the broker before being discarded. 
